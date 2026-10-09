@@ -15,3 +15,10 @@ events/*
 !events/_TEMPLATE/
 !events/_TEMPLATE/**
 !events/README.md
+# Generated slide deck — build locally via tools/build-deck.js, do not commit
+docs/*.pptx
+# MS Office lock/temp files
+~$*
+# Node build deps for the deck generator
+node_modules/
+package-lock.json
