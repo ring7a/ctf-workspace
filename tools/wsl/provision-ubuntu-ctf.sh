@@ -41,7 +41,7 @@ echo "== 2) apt build deps + system CTF tools =="
 sudo DEBIAN_FRONTEND=noninteractive apt-get update -q
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
   python3-venv python3-pip python3-dev python3-full build-essential \
-  libgmp-dev libmpfr-dev libmpc-dev libffi-dev libssl-dev pkg-config curl
+  libgmp-dev libmpfr-dev libmpc-dev libffi-dev libssl-dev pkg-config curl gdb-multiarch
 # System analysis tools (gdb, binwalk, steghide, exiftool, nmap, ...) via the
 # vendored installer's apt mode (CRLF-stripped first).
 cp "$INSTALLER" ~/install_ctf_tools.sh
@@ -68,6 +68,10 @@ else
   for s in $SPECS; do n=${s%%==*}; uv pip install "$s" || uv pip install "$n" || echo "FAIL $n"; done
   uv pip install 'pycparser==2.22' cysignals
 fi
+
+echo "== 4b) vendor hlextend (working hash length-extension; hashpumpy==1.2 is broken on py3.12) =="
+HLX_SP="$("$VENV/bin/python" -c 'import site;print(site.getsitepackages()[0])')"
+curl -fsSL -o "$HLX_SP/hlextend.py" https://raw.githubusercontent.com/stephenbradshaw/hlextend/master/hlextend.py && echo "  hlextend -> $HLX_SP/hlextend.py" || echo "  WARN: hlextend download failed; add manually"
 
 echo "== 5) auto-activate the CTF venv for ALL login shells =="
 # /etc/profile.d runs for login shells including non-interactive `bash -lc`,

@@ -172,3 +172,6 @@ zipp==1.0.0
 zope-event==6.2
 zope-interface==8.6
 zstandard==0.25.0
+# added 2026-10-10 (used by solved challenges: FORENSIC5 sgp4, WebSocket web chall)
+sgp4==2.27
+websocket-client==1.9.2
