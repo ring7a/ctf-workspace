@@ -13,7 +13,8 @@
 set -euo pipefail
 
 CTF_USER="${CTF_USER:-ctf}"
-REPO="${REPO:-/mnt/e/_/Orca/Projects/ctf}"
+# REPO = the repo root as seen from inside WSL (setup-ubuntu-ctf.ps1 passes it).
+REPO="${REPO:?set REPO to the repo root inside WSL, e.g. /mnt/e/path/to/ctf}"
 INSTALLER="${INSTALLER:-$REPO/tools/vendor-ctf-skills/scripts/install_ctf_tools.sh}"
 REQS="${REQS:-$REPO/tools/wsl/ctf-venv-requirements.txt}"
 VENV="/home/$CTF_USER/.ctf-tools/venv"

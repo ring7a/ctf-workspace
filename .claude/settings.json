@@ -16,8 +16,5 @@
       "Read(./**/untrusted/**)",
       "Bash(rm -rf /*)"
     ]
-  },
-  "env": {
-    "CTF_WORKSPACE": "E:/_/Orca/Projects/ctf"
   }
 }
