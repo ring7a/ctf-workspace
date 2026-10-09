@@ -27,7 +27,7 @@ the switch reason in NOTES.md. Do not tunnel.
   isolated WSL distro `ubuntu-ctf` (Ubuntu 26.04 LTS), never on the host.
   Enter with `wsl -d ubuntu-ctf`; CTF tools live in the auto-activated venv
   ~/.ctf-tools/venv. The workspace is at /mnt/e/_/Orca/Projects/ctf-workspace inside WSL.
-  (Docker is not installed; add it only if a challenge ships a container.)
+  (Docker 29.1 is installed and its daemon runs in ubuntu-ctf; use it when a challenge ships a container.)
 - Keep original challenge files in `<challenge>/untrusted/`. Do all work in
   `<challenge>/work/`. Pass paths as arguments; never run an interpreter from
   inside the untrusted directory. Run analysis Python with `python -I`.
