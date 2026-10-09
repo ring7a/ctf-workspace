@@ -174,3 +174,15 @@ Logs: docs/wsl-logs/.
   invoke tools. Fix: activate via /etc/profile.d/ctf-venv.sh (covers login
   shells incl. non-interactive) instead of ~/.bashrc. Baked into
   provision-ubuntu-ctf.sh and applied to the live distro.
+
+## 2026-10-10 — Share artifact + PPT
+- Share without hosting: `git bundle create ctf-workspace.bundle --all` →
+  E:\_\Orca\Projects\ctf-workspace.bundle (1.2 MB, full history, 0 challenge
+  files). Another machine: `git clone ctf-workspace.bundle`.
+- GitHub hosted remote: BLOCKED on auth (`gh` not logged in). To finish:
+  `gh auth login`, then `gh repo create <name> --private --source . --push`.
+- PPT: docs/CTF-Setup-Deck.pptx (12 slides, 13.33x7.5). Generator kept at
+  tools/build-deck.js (needs node + pptxgenjs; we installed nodejs in
+  ubuntu-ctf). Content QA passed (no off-slide shapes, Korean intact); no
+  pixel render QA (LibreOffice not installed) — open in PowerPoint to confirm.
+- Also installed nodejs/npm in ubuntu-ctf (useful for JS/web challenges too).
