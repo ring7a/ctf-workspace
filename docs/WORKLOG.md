@@ -68,3 +68,32 @@ The scaffolding (CLAUDE.md, agents, settings, templates) is tracked in git.
   `wsl --install -d Ubuntu-24.04` (interactive user creation).
 - Docker intentionally deferred (runs on WSL2 anyway; add only if a challenge
   ships a container).
+
+## 2026-10-09 — CTF Python toolchain installed on HOST (no WSL/Docker yet)
+Ran the `install_ctf_tools.sh` pip set directly on the Windows host Python 3.11
+(the bash script targets apt/brew/venv on Linux; installed the PIP_PACKAGES by name).
+- Installed & import-verified on host (33 of 36): pwntools 4.15, z3, sympy, gmpy2,
+  py_ecc, ecdsa, pycryptodome, numpy, Pillow, capstone, unicorn, lief, yara-python,
+  pefile, oletools, volatility3, scapy, ropper, ROPgadget, matplotlib, httpx, requests,
+  dnspython, dnslib, segno, shodan, sqlmap, flask-unsign, frida-tools, qiling,
+  uncompyle6, python-evtx, dissect.cobaltstrike.
+- angr 9.2.213 → installed into separate venv `.venv-tools/` on E: (C: drive is full,
+  <1GB free). Use `.venv-tools/Scripts/python.exe` for angr. unicorn-concrete disabled
+  on Windows (symbolic exec OK).
+- NOT installed (need MSVC C++ build tools or Linux): fpylll, hashpumpy.
+  (fpylll not actually needed — CRYPTO3 solved with a hand-written pure-Python LLL.)
+- pwntools limitation on host: `asm()`/shellcraft need GNU binutils `as` (absent).
+  Remote exploitation, ELF/ROP parsing, packing all work. keystone is present.
+- Caveat: running untrusted challenge binaries locally still prohibited (CLAUDE.md).
+  Host tools cover remote pwn + static/crypto/forensic work; dynamic binary analysis
+  and binutils-`as` still need WSL2/Docker. install_ctf_tools.sh `all` (apt/gdb/ghidra/
+  radare2/binwalk) remains for the Linux sandbox.
+- Disk note: C: was already ~full before install; purged pip cache (~610MB) to recover.
+
+## 2026-10-09 — WSL pre-reboot checks
+- `wsl --update`: no-op (engine already current).
+- Pending-reboot flags (CBS, WindowsUpdate): both False.
+- VM boot still hangs. Recommend Windows reboot (resets WSL2 utility VM state),
+  then `wsl -d Ubuntu -u root echo WSL_OK`. If still hanging: unregister +
+  reinstall (`wsl --unregister Ubuntu`; `wsl --install -d Ubuntu-24.04`,
+  interactive user creation).
