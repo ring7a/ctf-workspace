@@ -149,7 +149,7 @@ Logs: docs/wsl-logs/.
 
 ### CTF environment is now ready
 - Distro `ubuntu-ctf` (Ubuntu 26.04.1 LTS), user `ctf`, enter with `wsl -d ubuntu-ctf`.
-- Workspace reachable inside WSL at /mnt/e/_/Orca/Projects/ctf.
+- Workspace reachable inside WSL at /mnt/e/_/Orca/Projects/ctf-workspace.
 - Reproduce from scratch: `pwsh -File tools\wsl\setup-ubuntu-ctf.ps1`.
 
 ## 2026-10-10 — Codex cross-check, pre-CTF intake, Docker, rehearsal, venv fix
@@ -186,3 +186,7 @@ Logs: docs/wsl-logs/.
   ubuntu-ctf). Content QA passed (no off-slide shapes, Korean intact); no
   pixel render QA (LibreOffice not installed) — open in PowerPoint to confirm.
 - Also installed nodejs/npm in ubuntu-ctf (useful for JS/web challenges too).
+
+## 2026-10-10 — Workspace folder renamed: ctf -> ctf-workspace
+- Windows path now `E:\_\Orca\Projects\ctf-workspace`; WSL mount `/mnt/e/_/Orca/Projects/ctf-workspace` (old `/mnt/e/_/Orca/Projects/ctf` no longer exists).
+- Updated operational path references in CLAUDE.md, AGENTS.md, this log, and the setup.ps1 comment example. Git remote `origin` is unaffected by the local folder name.

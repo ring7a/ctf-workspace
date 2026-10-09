@@ -26,7 +26,7 @@ the switch reason in NOTES.md. Do not tunnel.
 - Host: Windows 10. Analysis of untrusted binaries/files MUST run inside the
   isolated WSL distro `ubuntu-ctf` (Ubuntu 26.04 LTS), never on the host.
   Enter with `wsl -d ubuntu-ctf`; CTF tools live in the auto-activated venv
-  ~/.ctf-tools/venv. The workspace is at /mnt/e/_/Orca/Projects/ctf inside WSL.
+  ~/.ctf-tools/venv. The workspace is at /mnt/e/_/Orca/Projects/ctf-workspace inside WSL.
   (Docker is not installed; add it only if a challenge ships a container.)
 - Keep original challenge files in `<challenge>/untrusted/`. Do all work in
   `<challenge>/work/`. Pass paths as arguments; never run an interpreter from

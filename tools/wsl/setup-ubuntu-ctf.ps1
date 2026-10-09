@@ -24,7 +24,7 @@ function ConvertTo-WslPath([string]$p) {
 
 # Repo root = two levels up from this script (tools/wsl -> repo).
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-# Same path as seen from inside WSL (e.g. E:\_\Orca\Projects\ctf -> /mnt/e/_/Orca/Projects/ctf).
+# Same path as seen from inside WSL (e.g. E:\_\Orca\Projects\ctf-workspace -> /mnt/e/_/Orca/Projects/ctf-workspace).
 $RepoWsl  = ConvertTo-WslPath $RepoRoot
 Write-Host "Repo (Windows): $RepoRoot"
 Write-Host "Repo (WSL):     $RepoWsl"
