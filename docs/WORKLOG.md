@@ -151,3 +151,26 @@ Logs: docs/wsl-logs/.
 - Distro `ubuntu-ctf` (Ubuntu 26.04.1 LTS), user `ctf`, enter with `wsl -d ubuntu-ctf`.
 - Workspace reachable inside WSL at /mnt/e/_/Orca/Projects/ctf.
 - Reproduce from scratch: `pwsh -File tools\wsl\setup-ubuntu-ctf.ps1`.
+
+## 2026-10-10 — Codex cross-check, pre-CTF intake, Docker, rehearsal, venv fix
+- Codex integration: `codex mcp` in this CLI only MANAGES external servers (no
+  serve mode), so instead of MCP we use `codex exec`/`codex review` (Codex is
+  logged in via ChatGPT). Added `tools/codex-crosscheck.sh`
+  ("<question>" -> codex exec read-only; --review -> codex review --uncommitted).
+  Removed the non-working register-codex-mcp.ps1. Documented in CLAUDE.md/AGENTS.md.
+- Pre-CTF intake: `docs/PRE-CTF-INTAKE.md` (rules/scope/flag-format questions the
+  agent must get answered before solving); CLAUDE.md now requires running it at
+  event start.
+- Docker: installed docker.io (29.1.3) + docker-compose-v2 inside ubuntu-ctf,
+  enabled systemd in /etc/wsl.conf, added ctf to the docker group. Verified:
+  systemd active, docker service active, `docker run hello-world` works.
+- Rehearsal (validation) on https://ctf.n0paew.xyz (CTFd "머린터틀CTF", public
+  read API): solved [CRYPTO1] Predictable Steps (LCG state recovery with
+  pycryptodome + gmpy2). Flag format observed: MARINE{<24 hex>}. pwntools,
+  sympy, numpy, PIL, scapy all import. Artifacts under events/rehearsal-n0paew/
+  (gitignored).
+- BUG FOUND & FIXED by the rehearsal: the venv did not auto-activate for
+  non-interactive login shells (`wsl -e bash -lc`), which is exactly how agents
+  invoke tools. Fix: activate via /etc/profile.d/ctf-venv.sh (covers login
+  shells incl. non-interactive) instead of ~/.bashrc. Baked into
+  provision-ubuntu-ctf.sh and applied to the live distro.

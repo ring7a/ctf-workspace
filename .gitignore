@@ -7,3 +7,6 @@ __pycache__/
 .venv/
 # Entire challenge tree (data + solve work) is untrusted and per-event
 events/*/challenges/
+.venv-tools/
+# Rehearsal/practice solve artifacts (downloads + flags)
+events/rehearsal-*/

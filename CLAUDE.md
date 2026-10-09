@@ -38,12 +38,23 @@ Every status update is three lines:
 - Confirmed facts: ...
 - Next experiment: ...
 
+## Pre-CTF intake (do this first, every event)
+At the start of an event, before touching any challenge, run the intake in
+`docs/PRE-CTF-INTAKE.md`: ask the user those questions (grouped, concise) and
+write the answers into `events/<event>/NOTES.md`. Do NOT start solving until the
+blocking items are known: AI-tool rules, flag format, in/out-of-scope targets.
+
 ## Flag handling
 - Read the active event's NOTES.md for the flag format and submission rules.
 - The verifier agent checks flag format; a human submits. No auto-submission.
 
 ## Collaboration with Codex
-When stuck past the 15-minute rule, hand the current hypothesis and the
-disproving evidence to Codex for an independent opinion. If the two opinions
-diverge, investigate the difference before continuing. AGENTS.md mirrors this
-file so Codex follows identical rules.
+Codex is a second model (different lineage) that is already logged in. Use it
+for an independent opinion or code review via the shell (no MCP server needed):
+- Second opinion: `tools/codex-crosscheck.sh "<hypothesis + disproving evidence>"`
+  (wraps `codex exec --sandbox read-only`).
+- Code review of a solve script / exploit: `tools/codex-crosscheck.sh --review`
+  (wraps `codex review --uncommitted`).
+When stuck past the 15-minute rule, hand Codex the current hypothesis AND the
+disproving evidence. If the two opinions diverge, investigate the difference
+before continuing. AGENTS.md mirrors this file so Codex follows identical rules.

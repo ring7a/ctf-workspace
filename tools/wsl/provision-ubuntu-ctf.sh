@@ -69,9 +69,16 @@ else
   uv pip install 'pycparser==2.22' cysignals
 fi
 
-echo "== 5) auto-activate the CTF venv in interactive shells =="
-LINE='[ -f ~/.ctf-tools/venv/bin/activate ] && source ~/.ctf-tools/venv/bin/activate'
-grep -qF "$LINE" ~/.bashrc || echo "$LINE" >> ~/.bashrc
+echo "== 5) auto-activate the CTF venv for ALL login shells =="
+# /etc/profile.d runs for login shells including non-interactive `bash -lc`,
+# which is how the agents invoke tools (`wsl -d ubuntu-ctf -u ctf -e bash -lc`).
+# A ~/.bashrc line is NOT enough — non-interactive bash skips .bashrc.
+sudo tee /etc/profile.d/ctf-venv.sh >/dev/null <<'SH'
+if [ -f /home/ctf/.ctf-tools/venv/bin/activate ]; then
+  . /home/ctf/.ctf-tools/venv/bin/activate
+fi
+SH
+sudo chmod 644 /etc/profile.d/ctf-venv.sh
 
 echo "== provision: python tool check =="
 source "$VENV/bin/activate"
