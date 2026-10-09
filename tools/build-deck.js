@@ -1,30 +1,35 @@
+// CTF Workspace — project deck generator (pptxgenjs).
+// Focus: concept, architecture, download/install, usage flow, skills,
+// adding more skill repos, tooling, and how to keep it updated.
+// Build:  cd <repo> && npm install pptxgenjs && node tools/build-deck.js
+// Output: docs/CTF-Setup-Deck.pptx  (gitignored — a local build artifact)
 const pptxgen = require("pptxgenjs");
 const pres = new pptxgen();
 pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5
 pres.author = "CTF Team";
-pres.title = "CTF 준비 세팅";
+pres.title = "CTF Workspace — Claude Code + Codex";
 
 // ---- palette ----
-const BG = "0B1221";       // deep navy background
-const PANEL = "132038";    // panel
-const CARD = "182742";     // card
-const CARD2 = "1E3250";    // card alt
-const CY = "34D3E6";       // cyan accent (primary)
-const CY_DK = "1B8FA0";    // darker cyan
-const AMBER = "F5B942";    // secondary accent
-const TXT = "EAF1FB";      // near-white text
-const MUTED = "9DB0CC";    // muted
-const LINE = "273B5C";     // hairline
+const BG = "0B1221";
+const PANEL = "132038";
+const CARD = "182742";
+const CARD2 = "1E3250";
+const CY = "34D3E6";
+const CY_DK = "1B8FA0";
+const AMBER = "F5B942";
+const GREEN = "5AD19A";
+const TXT = "EAF1FB";
+const MUTED = "9DB0CC";
+const LINE = "273B5C";
 
-const HF = "Calibri";      // header font (Korean falls back to system Hangul font)
-const BFACE = "Calibri";   // body font
+const HF = "Calibri";
+const BFACE = "Calibri";
 
-// master: dark background + slide number
 pres.defineSlideMaster({
   title: "DARK",
   background: { color: BG },
   objects: [
-    { text: { text: "2026 영남권 사이버 공격·방어 대회 · CTF 세팅", options: {
+    { text: { text: "CTF Workspace · Claude Code + Codex", options: {
       x: 0.5, y: 7.05, w: 9, h: 0.35, fontFace: BFACE, fontSize: 9, color: MUTED, align: "left", isTextBox: true } } },
   ],
   slideNumber: { x: 12.5, y: 7.05, w: 0.6, h: 0.35, fontFace: BFACE, fontSize: 9, color: MUTED },
@@ -32,281 +37,262 @@ pres.defineSlideMaster({
 
 // ---- helpers ----
 function title(slide, t, sub) {
-  slide.addText(t, { x: 0.6, y: 0.45, w: 12.1, h: 0.7, fontFace: HF, fontSize: 30, bold: true, color: TXT, align: "left", isTextBox: true, margin: 0 });
-  // small cyan square accent dot (motif), not a stripe
-  slide.addShape(pres.ShapeType.rect, { x: 0.6, y: 0.42, w: 0.12, h: 0.12, fill: { color: CY } });
-  if (sub) slide.addText(sub, { x: 0.6, y: 1.12, w: 12.1, h: 0.4, fontFace: BFACE, fontSize: 13, color: MUTED, align: "left", isTextBox: true, margin: 0 });
+  slide.addText(t, { x: 0.6, y: 0.42, w: 12.1, h: 0.7, fontFace: HF, fontSize: 28, bold: true, color: TXT, align: "left", isTextBox: true, margin: 0 });
+  slide.addShape(pres.ShapeType.rect, { x: 0.6, y: 0.4, w: 0.12, h: 0.12, fill: { color: CY } });
+  if (sub) slide.addText(sub, { x: 0.6, y: 1.06, w: 12.1, h: 0.4, fontFace: BFACE, fontSize: 13, color: MUTED, align: "left", isTextBox: true, margin: 0 });
 }
 function card(slide, x, y, w, h, fill) {
   slide.addShape(pres.ShapeType.roundRect, { x, y, w, h, rectRadius: 0.08, fill: { color: fill || CARD }, line: { color: LINE, width: 1 } });
 }
-function badge(slide, x, y, label) {
-  slide.addShape(pres.ShapeType.ellipse, { x, y, w: 0.46, h: 0.46, fill: { color: CY } });
+function badge(slide, x, y, label, col) {
+  slide.addShape(pres.ShapeType.ellipse, { x, y, w: 0.46, h: 0.46, fill: { color: col || CY } });
   slide.addText(label, { x, y, w: 0.46, h: 0.46, fontFace: HF, fontSize: 15, bold: true, color: BG, align: "center", valign: "middle", isTextBox: true, margin: 0 });
+}
+function chip(slide, x, y, w, label, col) {
+  slide.addShape(pres.ShapeType.roundRect, { x, y, w, h: 0.34, rectRadius: 0.17, fill: { color: CARD2 }, line: { color: col || CY_DK, width: 1 } });
+  slide.addText(label, { x, y, w, h: 0.34, fontFace: BFACE, fontSize: 10.5, color: col || CY, align: "center", valign: "middle", isTextBox: true, margin: 0 });
+}
+// cardTitle + body bullets inside a card
+function cardText(slide, x, y, w, head, lines, headCol) {
+  slide.addText(head, { x: x + 0.22, y: y + 0.14, w: w - 0.44, h: 0.38, fontFace: HF, fontSize: 14.5, bold: true, color: headCol || TXT, isTextBox: true, margin: 0 });
+  const runs = lines.map((t, i) => ({ text: t, options: { bullet: { code: "2022", indent: 12 }, color: MUTED, fontSize: 11, breakLine: true, paraSpaceAfter: 3 } }));
+  slide.addText(runs, { x: x + 0.22, y: y + 0.56, w: w - 0.44, h: 1.6, fontFace: BFACE, isTextBox: true, margin: 0, valign: "top", lineSpacingMultiple: 1.02 });
+}
+function codeBox(slide, x, y, w, h, lines) {
+  slide.addShape(pres.ShapeType.roundRect, { x, y, w, h, rectRadius: 0.05, fill: { color: "0E1A30" }, line: { color: LINE, width: 1 } });
+  const runs = lines.map((t) => ({ text: t, options: { color: t.startsWith("#") ? MUTED : CY, fontSize: 11, breakLine: true, paraSpaceAfter: 2 } }));
+  slide.addText(runs, { x: x + 0.2, y: y + 0.12, w: w - 0.4, h: h - 0.24, fontFace: "Consolas", isTextBox: true, margin: 0, valign: "top" });
 }
 
 // =================================================================
-// Slide 1 — Title
+// 1 — Title
 // =================================================================
 let s = pres.addSlide({ masterName: "DARK" });
-s.addShape(pres.ShapeType.rect, { x: 0.6, y: 2.05, w: 0.7, h: 0.14, fill: { color: CY } });
-s.addText("CTF 대회 준비 세팅 가이드", { x: 0.6, y: 2.3, w: 12, h: 1.0, fontFace: HF, fontSize: 44, bold: true, color: TXT, isTextBox: true, margin: 0 });
-s.addText("Claude Code + Codex 협업 환경 구성", { x: 0.6, y: 3.35, w: 12, h: 0.6, fontFace: HF, fontSize: 24, color: CY, isTextBox: true, margin: 0 });
+s.addShape(pres.ShapeType.rect, { x: 0.6, y: 2.0, w: 0.7, h: 0.14, fill: { color: CY } });
+s.addText("CTF Workspace", { x: 0.6, y: 2.25, w: 12, h: 1.0, fontFace: HF, fontSize: 46, bold: true, color: TXT, isTextBox: true, margin: 0 });
+s.addText("Claude Code + Codex 기반 재현 가능한 CTF 분석 환경", { x: 0.6, y: 3.35, w: 12, h: 0.6, fontFace: HF, fontSize: 23, color: CY, isTextBox: true, margin: 0 });
 s.addText([
-  { text: "2026 제2회 영남권 사이버 공격·방어 대회", options: { fontSize: 14, color: TXT, breakLine: true } },
-  { text: "예선 2026-10-14 (온라인 CTF) · 결선 2026-11-04 (오프라인 공방전)", options: { fontSize: 12, color: MUTED } },
-], { x: 0.6, y: 4.25, w: 12, h: 0.9, fontFace: BFACE, isTextBox: true, margin: 0, lineSpacingMultiple: 1.2 });
-s.addText("재현 가능한 워크스페이스 · 작성일 2026-10-09", { x: 0.6, y: 6.2, w: 12, h: 0.4, fontFace: BFACE, fontSize: 11, italic: true, color: MUTED, isTextBox: true, margin: 0 });
+  { text: "한 번 clone + 스크립트 한 줄로 동일한 격리 분석 환경이 재현됩니다.", options: { fontSize: 14, color: TXT, breakLine: true } },
+  { text: "github.com/ring7a/ctf-workspace", options: { fontSize: 13, color: AMBER } },
+], { x: 0.6, y: 4.3, w: 12, h: 0.9, fontFace: BFACE, isTextBox: true, margin: 0, lineSpacingMultiple: 1.25 });
+s.addText("개념 · 아키텍처 · 설치 · 사용 · 툴링 · 확장", { x: 0.6, y: 6.2, w: 12, h: 0.4, fontFace: BFACE, fontSize: 11, italic: true, color: MUTED, isTextBox: true, margin: 0 });
 
 // =================================================================
-// Slide 2 — 세팅 한눈에 (overview, 4 pillars)
+// 2 — Concept
 // =================================================================
 s = pres.addSlide({ masterName: "DARK" });
-title(s, "세팅 한눈에", "네 개의 축으로 구성했습니다");
-const pillars = [
-  ["모델 역할 분담", "깊은 추론은 Claude, 교차 검증은 Codex. 같은 함정에 빠지지 않게 분리."],
-  ["검증된 스킬 라이브러리", "오픈소스 ctf-skills 11개 카테고리를 커밋 고정으로 벤더링."],
-  ["서브에이전트 자동화", "분류·풀이·검증을 전담 에이전트 3종으로 병렬화."],
-  ["재현성 & 공유", "git 버전관리 + 작업 로그 + 원클릭 setup 스크립트."],
+title(s, "개념 — 무엇이고 왜 쓰는가", "CTF 팀을 위한 재현 가능·격리·규율·협업형 분석 워크스페이스");
+const c2 = [
+  ["재현성", GREEN, ["git clone + setup 스크립트 1회로 동일 환경", "동결된 패키지 집합 + 핀 고정 커밋", "머신/단말기 간 git pull 로 동기화"]],
+  ["격리", CY, ["신뢰 못 할 바이너리는 WSL ubuntu-ctf 안에서만 실행", "호스트는 건드리지 않음", "원본은 untrusted/, 작업은 work/"]],
+  ["규율", AMBER, ["가설 1개 → 최소 실험 → NOTES 기록", "15분 룰: 진전 없으면 접근 전환", "solve-challenge 디스패처로 분류·라우팅"]],
+  ["협업", CY, ["공개 git 리포로 팀 공유 (플래그는 비공개)", "Codex 2차 의견·코드 리뷰", "verifier 가 포맷 검증, 제출은 사람이"]],
 ];
-let px = 0.6, pw = 5.95, ph = 2.15, gap = 0.3;
-pillars.forEach((p, i) => {
-  const col = i % 2, row = Math.floor(i / 2);
-  const x = px + col * (pw + gap), y = 1.75 + row * (ph + gap);
-  card(s, x, y, pw, ph, col === row ? CARD : CARD2);
-  badge(s, x + 0.3, y + 0.3, String(i + 1));
-  s.addText(p[0], { x: x + 0.95, y: y + 0.3, w: pw - 1.2, h: 0.5, fontFace: HF, fontSize: 18, bold: true, color: CY, isTextBox: true, margin: 0, valign: "middle" });
-  s.addText(p[1], { x: x + 0.35, y: y + 1.0, w: pw - 0.7, h: 1.0, fontFace: BFACE, fontSize: 13.5, color: TXT, isTextBox: true, margin: 0, lineSpacingMultiple: 1.15 });
+let cx = 0.6, cw = 2.95, gap = 0.17;
+c2.forEach((it, i) => {
+  const x = cx + i * (cw + gap);
+  card(s, x, 1.7, cw, 4.3, CARD);
+  s.addShape(pres.ShapeType.rect, { x: x, y: 1.7, w: cw, h: 0.1, fill: { color: it[1] } });
+  cardText(s, x, 1.85, cw, it[0], it[2], it[1]);
 });
 
 // =================================================================
-// Slide 3 — 모델 역할 분담 (table)
+// 3 — Architecture
 // =================================================================
 s = pres.addSlide({ masterName: "DARK" });
-title(s, "모델 역할 분담", "핵심 원칙: 같은 문제를 동시에 던지지 말고, 막혔을 때 교차 검증");
-const rows = [
-  [{ text: "역할", opts: { bold: true } }, { text: "도구 / 모델", opts: { bold: true } }, { text: "이유", opts: { bold: true } }],
-  ["메인 솔버 (rev·pwn·crypto)", "Claude Code · Fable 5.1 (high effort)", "긴 추론 체인과 가설 검증에 강함"],
-  ["빠른 스크립팅·자동화", "Opus 5.5 fast mode", "파서·디코더는 속도가 관건"],
-  ["탐색·문자열 수집(서브)", "Sonnet 5.5", "토큰 절약, 병렬 다수 실행"],
-  ["교차 검증·세컨드 오피니언", "Codex (reasoning high)", "다른 모델 계열, 함정 회피"],
+title(s, "아키텍처", "분석 지능(Claude + Codex) · 격리 실행(WSL) · 재현 자산(git) 의 분리");
+// top: git repo
+card(s, 0.6, 1.65, 12.1, 0.95, PANEL);
+s.addText("공개 Git 리포  ·  github.com/ring7a/ctf-workspace", { x: 0.85, y: 1.78, w: 8, h: 0.4, fontFace: HF, fontSize: 15, bold: true, color: TXT, isTextBox: true, margin: 0 });
+s.addText("규칙 · 스킬 · 에이전트 · 설정 · 툴링 스크립트 · 문서 (events/* 와 플래그는 ignore)", { x: 0.85, y: 2.2, w: 11.6, h: 0.35, fontFace: BFACE, fontSize: 11.5, color: MUTED, isTextBox: true, margin: 0 });
+// three columns
+const col = [
+  ["Claude Code", CY, ["CLAUDE.md 운영 규칙", ".claude/skills — 벤더된 11개 CTF 스킬", ".claude/agents — triager·solver·verifier"]],
+  ["Codex (2차 모델)", AMBER, ["tools/codex-crosscheck.sh", "독립 의견: codex exec (read-only)", "코드 리뷰: codex review --uncommitted"]],
+  ["WSL ubuntu-ctf (격리)", GREEN, ["~/.ctf-tools/venv — Python 3.12 툴체인", "gdb·radare2·binwalk·Docker 등", "untrusted 바이너리는 여기서만 실행"]],
 ];
-const tRows = rows.map((r, ri) => r.map((c) => {
-  const text = typeof c === "string" ? c : c.text;
-  const b = typeof c === "object" && c.opts && c.opts.bold;
-  return { text, options: { fontFace: BFACE, fontSize: 13.5, color: ri === 0 ? BG : TXT,
-    fill: { color: ri === 0 ? CY : (ri % 2 ? CARD : CARD2) }, bold: !!b || ri === 0,
-    align: "left", valign: "middle", margin: [4, 8, 4, 8] } };
-}));
-s.addTable(tRows, { x: 0.6, y: 1.75, w: 12.1, colW: [3.5, 4.3, 4.3], rowH: 0.85, border: { type: "solid", color: LINE, pt: 1 } });
-
-// =================================================================
-// Slide 4 — 워크스페이스 구조
-// =================================================================
-s = pres.addSlide({ masterName: "DARK" });
-title(s, "워크스페이스 구조", "경로 독립 · 모든 대회를 한 곳에서");
-card(s, 0.6, 1.75, 6.3, 4.9, PANEL);
+col.forEach((it, i) => {
+  const x = 0.6 + i * (3.97 + 0.1);
+  card(s, x, 2.85, 3.97, 2.55, CARD);
+  s.addShape(pres.ShapeType.rect, { x, y: 2.85, w: 3.97, h: 0.1, fill: { color: it[1] } });
+  cardText(s, x, 3.0, 3.97, it[0], it[2], it[1]);
+});
+// bottom: events
+card(s, 0.6, 5.6, 12.1, 0.75, CARD2);
 s.addText([
-  { text: "ctf/", options: { color: CY, bold: true, breakLine: true } },
-  { text: "├─ CLAUDE.md / AGENTS.md   운영 규칙 (공유)", options: { breakLine: true } },
-  { text: "├─ .claude\\skills\\        CTF 스킬 11개", options: { breakLine: true } },
-  { text: "├─ .claude\\agents\\        triager·solver·verifier", options: { breakLine: true } },
-  { text: "├─ .claude\\settings.json  권한 설정", options: { breakLine: true } },
-  { text: "├─ events\\<대회>\\         NOTES + challenges", options: { breakLine: true } },
-  { text: "├─ tools\\wsl\\             전용 ubuntu-ctf 구축", options: { breakLine: true } },
-  { text: "├─ docs\\BOOTSTRAP.md      재구축 온보딩 문서", options: { breakLine: true } },
-  { text: "└─ setup.ps1              스킬 재설치", options: {} },
-], { x: 0.9, y: 2.0, w: 5.8, h: 4.4, fontFace: "Consolas", fontSize: 12.5, color: TXT, isTextBox: true, margin: 0, lineSpacingMultiple: 1.35 });
-
-const notes = [
-  ["문제 격리", "원본은 untrusted/, 작업은 work/ 에서만. 호스트에서 바이너리 직접 실행 금지."],
-  ["대회별 분리", "events/<대회>/ 아래 NOTES.md에 규칙·서버·플래그 포맷 기록."],
-  ["공유 규칙", "CLAUDE.md와 AGENTS.md를 동일하게 유지해 Claude·Codex가 같은 규칙으로 동작."],
-];
-notes.forEach((n, i) => {
-  const y = 1.75 + i * 1.68;
-  card(s, 7.1, y, 5.6, 1.5, i % 2 ? CARD2 : CARD);
-  s.addText(n[0], { x: 7.35, y: y + 0.18, w: 5.1, h: 0.4, fontFace: HF, fontSize: 15, bold: true, color: CY, isTextBox: true, margin: 0 });
-  s.addText(n[1], { x: 7.35, y: y + 0.62, w: 5.1, h: 0.8, fontFace: BFACE, fontSize: 12.5, color: TXT, isTextBox: true, margin: 0, lineSpacingMultiple: 1.12 });
-});
+  { text: "events/<대회>/ ", options: { color: TXT, bold: true, fontSize: 12 } },
+  { text: " — 대회별 챌린지 데이터·NOTES·플래그. git 추적 제외(gitignore), 머신 로컬 유지.", options: { color: MUTED, fontSize: 12 } },
+], { x: 0.85, y: 5.75, w: 11.6, h: 0.45, fontFace: BFACE, isTextBox: true, margin: 0, valign: "middle" });
 
 // =================================================================
-// Slide 5 — 스킬 라이브러리
+// 4 — Download & install
 // =================================================================
 s = pres.addSlide({ masterName: "DARK" });
-title(s, "스킬 라이브러리: ctf-skills", "오픈소스 ljagiello/ctf-skills · 커밋 c332c7b 고정 벤더링");
-const skills = [
-  "ctf-web", "ctf-pwn", "ctf-crypto", "ctf-reverse",
-  "ctf-forensics", "ctf-malware", "ctf-osint", "ctf-misc",
-  "ctf-ai-ml", "ctf-writeup", "solve-challenge", "(+상세 기법 130여 문서)",
-];
-let sx = 0.6, sw = 3.0, sh = 0.95, sgx = 0.1, sgy = 0.25;
-skills.forEach((sk, i) => {
-  const col = i % 4, row = Math.floor(i / 4);
-  const x = sx + col * (sw + sgx), y = 1.95 + row * (sh + sgy);
-  const isDisp = sk === "solve-challenge";
-  card(s, x, y, sw, sh, isDisp ? CY_DK : (i === 11 ? PANEL : CARD));
-  s.addText(sk, { x: x + 0.1, y, w: sw - 0.2, h: sh, fontFace: "Consolas", fontSize: isDisp ? 14 : 13, bold: isDisp,
-    color: i === 11 ? MUTED : TXT, align: "center", valign: "middle", isTextBox: true, margin: 0 });
-});
-s.addText([
-  { text: "solve-challenge", options: { bold: true, color: CY } },
-  { text: " 가 디스패처 — 문제를 분류하고 알맞은 ctf-* 스킬로 라우팅합니다.  pwn·crypto·web 스킬에는 실행 가능한 파이썬 스크립트 포함.", options: { color: TXT } },
-], { x: 0.6, y: 5.45, w: 12.1, h: 0.9, fontFace: BFACE, fontSize: 13.5, isTextBox: true, margin: 0, lineSpacingMultiple: 1.2 });
-
-// =================================================================
-// Slide 6 — 서브에이전트 3종
-// =================================================================
-s = pres.addSlide({ masterName: "DARK" });
-title(s, "서브에이전트 3종", "메인 컨텍스트를 깨끗하게 유지하는 분업");
-const agents = [
-  ["triager", "분류 · 정찰", "모든 문제를 훑어 카테고리·난이도·예상 시간을 표로 정리. 익스플로잇은 하지 않음.", "Sonnet"],
-  ["solver", "단일 문제 전담", "worktree 격리로 문제 하나를 끝까지. 가설→실험→기록 루프, 재현 경로 반환.", "inherit"],
-  ["verifier", "플래그 검증", "플래그 포맷 확인 + 최소 풀이 재실행으로 재현성 검증. 제출은 사람이.", "Sonnet"],
-];
-agents.forEach((a, i) => {
-  const x = 0.6 + i * 4.12, w = 3.9;
-  card(s, x, 1.85, w, 4.4, i === 1 ? CARD2 : CARD);
-  s.addShape(pres.ShapeType.ellipse, { x: x + 0.3, y: 2.15, w: 0.5, h: 0.5, fill: { color: i === 1 ? AMBER : CY } });
-  s.addText(a[0], { x: x + 0.3, y: 2.8, w: w - 0.6, h: 0.5, fontFace: "Consolas", fontSize: 19, bold: true, color: TXT, isTextBox: true, margin: 0 });
-  s.addText(a[1], { x: x + 0.3, y: 3.35, w: w - 0.6, h: 0.4, fontFace: HF, fontSize: 14, bold: true, color: i === 1 ? AMBER : CY, isTextBox: true, margin: 0 });
-  s.addText(a[2], { x: x + 0.3, y: 3.95, w: w - 0.6, h: 1.8, fontFace: BFACE, fontSize: 13, color: TXT, isTextBox: true, margin: 0, lineSpacingMultiple: 1.25 });
-  s.addText("model: " + a[3], { x: x + 0.3, y: 5.75, w: w - 0.6, h: 0.35, fontFace: "Consolas", fontSize: 11, color: MUTED, isTextBox: true, margin: 0 });
-});
-
-// =================================================================
-// Slide 7 — Claude + Codex 협업
-// =================================================================
-s = pres.addSlide({ masterName: "DARK" });
-title(s, "Claude + Codex 협업", "두 모델이 다른 가설을 내면, 그 차이가 힌트");
-card(s, 0.6, 1.9, 5.9, 2.0, CARD);
-s.addText("옵션 A — 셸 교차검증 (구축 완료)", { x: 0.85, y: 2.1, w: 5.4, h: 0.4, fontFace: HF, fontSize: 16, bold: true, color: CY, isTextBox: true, margin: 0 });
-s.addText([
-  { text: "tools/codex-crosscheck.sh \"...\"", options: { fontFace: "Consolas", fontSize: 12, color: TXT, breakLine: true } },
-  { text: "codex exec / codex review 호출. 15분 룰 초과 시 교차 검증, --review로 익스플로잇 리뷰.", options: { fontFace: BFACE, fontSize: 12.5, color: MUTED } },
-], { x: 0.85, y: 2.55, w: 5.4, h: 1.2, isTextBox: true, margin: 0, lineSpacingMultiple: 1.3 });
-
-card(s, 6.8, 1.9, 5.9, 2.0, CARD2);
-s.addText("옵션 B — 완전 병렬", { x: 7.05, y: 2.1, w: 5.4, h: 0.4, fontFace: HF, fontSize: 16, bold: true, color: AMBER, isTextBox: true, margin: 0 });
-s.addText("터미널 두 개로 서로 다른 문제를 담당. 공유 NOTES.md로만 상태 교환. AGENTS.md=CLAUDE.md 로 규칙 일치.",
-  { x: 7.05, y: 2.55, w: 5.4, h: 1.2, fontFace: BFACE, fontSize: 12.5, color: TXT, isTextBox: true, margin: 0, lineSpacingMultiple: 1.3 });
-
-card(s, 0.6, 4.1, 12.1, 2.15, PANEL);
-s.addText("교차 검증 루프", { x: 0.85, y: 4.3, w: 11.6, h: 0.4, fontFace: HF, fontSize: 16, bold: true, color: TXT, isTextBox: true, margin: 0 });
-const flow = ["막힘(15분)", "가설+반증 근거 전달", "Codex 독립 의견", "의견 상이?", "차이부터 조사"];
-flow.forEach((f, i) => {
-  const x = 0.9 + i * 2.42;
-  s.addShape(pres.ShapeType.roundRect, { x, y: 4.9, w: 2.1, h: 0.95, rectRadius: 0.06, fill: { color: i === 3 ? AMBER : CARD2 }, line: { color: CY, width: 1 } });
-  s.addText(f, { x: x + 0.05, y: 4.9, w: 2.0, h: 0.95, fontFace: BFACE, fontSize: 12.5, bold: i === 3, color: i === 3 ? BG : TXT, align: "center", valign: "middle", isTextBox: true, margin: 0 });
-  if (i < 4) s.addText("›", { x: x + 2.08, y: 4.9, w: 0.34, h: 0.95, fontFace: HF, fontSize: 22, color: CY, align: "center", valign: "middle", isTextBox: true, margin: 0 });
-});
-
-// =================================================================
-// Slide 8 — 작업 원칙 (workflow)
-// =================================================================
-s = pres.addSlide({ masterName: "DARK" });
-title(s, "작업 원칙", "프롬프트 엔지니어링의 90%는 CLAUDE.md 규칙에서 결정");
+title(s, "다운로드 & 설치", "새 머신에서: clone → 스크립트 1개 → 완료 (재현 가능)");
 const steps = [
-  ["정찰 먼저", "파일 타입·strings·보호기법·카테고리 식별"],
-  ["가설 1개", "익스플로잇 전에 반드시 가설 하나를 세움"],
-  ["최소 실험", "가장 작은 실험으로 가설을 검증"],
-  ["기록", "사실 / 반증 / 다음 단계를 NOTES.md에"],
-  ["다음 가설", "도구부터 난사하지 않음"],
+  ["리포 clone", ["git clone 로 공개 리포를 받는다", "폴더명은 자유 (원격은 영향 없음)"]],
+  ["setup 스크립트 실행", ["pwsh tools\\wsl\\setup-ubuntu-ctf.ps1", "ubuntu-ctf 배포판 생성 + 프로비저닝"]],
+  ["자동 프로비저닝", ["uv + Python 3.12 venv 생성", "동결 requirements + apt 시스템 툴 설치", "로그인 셸에 venv 자동 활성화"]],
+  ["Codex 로그인(1회)", ["codex 로그인(ChatGPT) 확인", "이후 codex-crosscheck.sh 바로 사용"]],
 ];
-steps.forEach((st, i) => {
-  const y = 1.85 + i * 0.86;
-  badge(s, 0.7, y, String(i + 1));
-  card(s, 1.4, y - 0.02, 7.0, 0.72, i % 2 ? CARD2 : CARD);
-  s.addText(st[0], { x: 1.65, y: y - 0.02, w: 2.2, h: 0.72, fontFace: HF, fontSize: 15, bold: true, color: CY, valign: "middle", isTextBox: true, margin: 0 });
-  s.addText(st[1], { x: 3.8, y: y - 0.02, w: 4.5, h: 0.72, fontFace: BFACE, fontSize: 13, color: TXT, valign: "middle", isTextBox: true, margin: 0 });
+steps.forEach((it, i) => {
+  const y = 1.75 + i * 1.18;
+  badge(s, 0.7, y + 0.18, String(i + 1));
+  card(s, 1.4, y, 11.3, 1.02, CARD);
+  s.addText(it[0], { x: 1.65, y: y + 0.1, w: 4.2, h: 0.5, fontFace: HF, fontSize: 15, bold: true, color: CY, isTextBox: true, margin: 0, valign: "middle" });
+  s.addText(it[1].map((t) => ({ text: t, options: { bullet: { code: "2022" }, color: MUTED, fontSize: 11, breakLine: true } })),
+    { x: 5.4, y: y + 0.08, w: 7.1, h: 0.86, fontFace: BFACE, isTextBox: true, margin: 0, valign: "middle" });
 });
-card(s, 8.8, 1.85, 3.9, 4.3, PANEL);
-s.addText("15분 룰", { x: 9.05, y: 2.1, w: 3.4, h: 0.5, fontFace: HF, fontSize: 22, bold: true, color: AMBER, isTextBox: true, margin: 0 });
-s.addText("15", { x: 9.05, y: 2.7, w: 3.4, h: 1.1, fontFace: HF, fontSize: 72, bold: true, color: TXT, isTextBox: true, margin: 0 });
-s.addText("한 접근법이 15분간 진전이 없으면 전환하고, 전환 사유를 기록합니다. 터널링 방지.",
-  { x: 9.05, y: 3.95, w: 3.4, h: 2.0, fontFace: BFACE, fontSize: 13.5, color: TXT, isTextBox: true, margin: 0, lineSpacingMultiple: 1.3 });
-
 // =================================================================
-// Slide 9 — 재현성 & 기록
+// 5 — Usage flow (per event / per challenge)
 // =================================================================
 s = pres.addSlide({ masterName: "DARK" });
-title(s, "재현성 & 기록", "모든 작업을 추적하고 한 번에 재생성할 수 있게");
-const repro = [
-  ["git 버전관리", "저장소 전체를 커밋. 스킬도 커밋 고정으로 포함해 한 번에 복원."],
-  ["WORKLOG + 로그", "환경·단계·신뢰 주의를 날짜와 함께 기록, 원본 로그 보관."],
-  ["BOOTSTRAP.md", "다른 환경의 Claude가 읽고 바로 재구축 (경로 독립)."],
-  ["동결 requirements", "실제 동작하는 174개 패키지 집합을 그대로 재설치."],
+title(s, "사용 플로우", "대회 시작 → 문제별 반복 루프 → 검증·제출");
+// intake banner
+card(s, 0.6, 1.65, 12.1, 0.8, PANEL);
+s.addText("① 대회 시작 — Pre-CTF 인테이크", { x: 0.85, y: 1.72, w: 11, h: 0.3, fontFace: HF, fontSize: 13, bold: true, color: AMBER, isTextBox: true, margin: 0 });
+s.addText("docs/PRE-CTF-INTAKE.md 로 플래그 포맷·범위·AI 도구 규정을 먼저 확인해 events/<대회>/NOTES.md 에 기록 (블로킹 항목 확정 전 풀이 금지)",
+  { x: 0.85, y: 2.04, w: 11.6, h: 0.35, fontFace: BFACE, fontSize: 11, color: MUTED, isTextBox: true, margin: 0 });
+// loop steps
+const loop = [
+  ["recon / 분류", "solve-challenge 디스패처가 카테고리 판별 → 해당 스킬로 라우팅"],
+  ["가설 1개", "익스플로잇 돌리기 전에 가설을 하나만 세운다"],
+  ["최소 실험", "가장 작은 실험으로 검증 (WSL 격리 환경에서)"],
+  ["NOTES 기록", "사실/반증/다음 단계를 challenge NOTES.md 에 남김"],
+  ["15분 룰 / Codex", "진전 없으면 접근 전환 + codex-crosscheck 로 2차 의견"],
+  ["검증 · 제출", "verifier 가 포맷·재현 확인 → 사람이 제출 (자동 제출 없음)"],
 ];
-repro.forEach((r, i) => {
-  const col = i % 2, row = Math.floor(i / 2);
-  const x = 0.6 + col * 6.25, y = 1.9 + row * 2.2;
-  card(s, x, y, 5.9, 1.95, i % 2 ? CARD2 : CARD);
-  s.addText(r[0], { x: x + 0.35, y: y + 0.28, w: 5.2, h: 0.5, fontFace: "Consolas", fontSize: 17, bold: true, color: CY, isTextBox: true, margin: 0 });
-  s.addText(r[1], { x: x + 0.35, y: y + 0.9, w: 5.2, h: 0.9, fontFace: BFACE, fontSize: 13.5, color: TXT, isTextBox: true, margin: 0, lineSpacingMultiple: 1.2 });
-});
-
-// =================================================================
-// Slide 10 — 당일 운영 루틴
-// =================================================================
-s = pres.addSlide({ masterName: "DARK" });
-title(s, "당일 운영 루틴", "예선 2026-10-14");
-const run = [
-  ["시작 10분", "규칙·플래그 포맷을 NOTES.md에 기록 → 전 문제 다운로드 → triager 실행"],
-  ["초반", "쉬운 문제부터 solver 병렬 투입. 사람은 가장 어려운 1문제에 집중"],
-  ["매 1시간", "전체 NOTES를 메인 세션에 읽혀 우선순위 재조정"],
-  ["플래그", "verifier가 형식·재현 검증 → 사람이 직접 제출 (자동 제출 금지)"],
-  ["종료 후", "ctf-writeup 스킬로 풀이 정리 → 결선 준비·다음 대회 자산"],
-];
-run.forEach((r, i) => {
-  const y = 1.8 + i * 0.95;
-  card(s, 0.6, y, 12.1, 0.82, i % 2 ? CARD2 : CARD);
-  s.addText(r[0], { x: 0.85, y, w: 2.6, h: 0.82, fontFace: HF, fontSize: 15, bold: true, color: CY, valign: "middle", isTextBox: true, margin: 0 });
-  s.addShape(pres.ShapeType.line, { x: 3.5, y: y + 0.16, w: 0, h: 0.5, line: { color: LINE, width: 1 } });
-  s.addText(r[1], { x: 3.75, y, w: 8.7, h: 0.82, fontFace: BFACE, fontSize: 13.5, color: TXT, valign: "middle", isTextBox: true, margin: 0 });
+loop.forEach((it, i) => {
+  const xcol = i % 2, yrow = Math.floor(i / 2);
+  const x = 0.6 + xcol * 6.15, y = 2.65 + yrow * 1.25;
+  card(s, x, y, 5.95, 1.1, CARD);
+  badge(s, x + 0.18, y + 0.32, String(i + 1), i >= 4 ? AMBER : CY);
+  s.addText(it[0], { x: x + 0.8, y: y + 0.12, w: 5.0, h: 0.4, fontFace: HF, fontSize: 14, bold: true, color: TXT, isTextBox: true, margin: 0 });
+  s.addText(it[1], { x: x + 0.8, y: y + 0.5, w: 5.0, h: 0.5, fontFace: BFACE, fontSize: 10.5, color: MUTED, isTextBox: true, margin: 0 });
 });
 
 // =================================================================
-// Slide 11 — 시작 전 TODO
+// 6 — Skills system
 // =================================================================
 s = pres.addSlide({ masterName: "DARK" });
-title(s, "구축 완료 체크리스트", "리허설로 전 과정 검증 완료");
-const todo = [
-  ["격리 실행 환경", "전용 ubuntu-ctf (Ubuntu 26.04) + Docker 29.1 구축", "완료"],
-  ["CTF 도구", "pwntools·angr·volatility3 등 174개 (py3.12 venv)", "완료"],
-  ["Codex 교차검증", "codex-crosscheck.sh (codex exec / review)", "완료"],
-  ["리허설", "CRYPTO1 풀이 성공 — MARINE{...} 복구, 툴체인 검증", "완료"],
-  ["규칙 확인", "대회 시작 시 사전 인터뷰(PRE-CTF-INTAKE)로 수집", "대회시작"],
+title(s, "스킬 시스템", "벤더된 CTF 스킬이 분류·기법을 제공 — 디스패처가 올바른 스킬로 보냄");
+const skills = ["ctf-web", "ctf-pwn", "ctf-crypto", "ctf-reverse", "ctf-forensics", "ctf-malware", "ctf-osint", "ctf-misc", "ctf-ai-ml", "solve-challenge", "ctf-writeup"];
+skills.forEach((k, i) => {
+  const xcol = i % 4, yrow = Math.floor(i / 4);
+  const x = 0.6 + xcol * 3.07, y = 1.75 + yrow * 0.95;
+  card(s, x, y, 2.9, 0.78, CARD);
+  const isMeta = k === "solve-challenge" || k === "ctf-writeup";
+  s.addText(k, { x: x + 0.18, y: y + 0.08, w: 2.6, h: 0.35, fontFace: HF, fontSize: 14, bold: true, color: isMeta ? AMBER : CY, isTextBox: true, margin: 0 });
+  s.addText(isMeta ? (k === "solve-challenge" ? "디스패처 / recon" : "풀이 writeup") : "카테고리 기법", { x: x + 0.18, y: y + 0.42, w: 2.6, h: 0.28, fontFace: BFACE, fontSize: 10, color: MUTED, isTextBox: true, margin: 0 });
+});
+card(s, 0.6, 4.75, 12.1, 1.5, PANEL);
+cardText(s, 0.6, 4.78, 12.1, "출처와 무결성", [
+  "github.com/ljagiello/ctf-skills 를 핀 고정 커밋(c332c7b)으로 벤더링 — 스킬 11종 · 문서 124개",
+  "각 스킬은 SKILL.md + 하위 기법 문서 구조. 서브에이전트: triager(분류) · solver(단일 문제) · verifier(검증)",
+  "tools/vendor-ctf-skills/scripts/skill_security_auditor.py 로 보안 감사 후 커밋",
+], TXT);
+
+// =================================================================
+// 7 — Adding more skill repos
+// =================================================================
+s = pres.addSlide({ masterName: "DARK" });
+title(s, "스킬 레포 더 추가하기", "ctf-skills 외에도 좋은 스킬 모음을 같은 방식으로 벤더링");
+const add = [
+  ["어디서 찾나", ["Anthropic 공식 스킬 모음", "커뮤니티 \"awesome Claude / skills\" 모음", "다른 CTF 스킬 컬렉션 리포", "핵심: SKILL.md 구조 + 신뢰 가능한 출처"]],
+  ["어떻게 벤더링", ["해당 리포를 핀 고정 커밋으로 clone", "스킬 디렉터리를 .claude/skills/ 로 복사", "원본·LICENSE·핀 커밋을 tools/vendor-*/ 에 보존", "skill_security_auditor.py 로 감사 후 커밋"]],
+  ["주의할 점", ["스킬은 Claude 가 따르는 '지시'다 — 출처 신뢰 필수", "버전은 핀 고정 (재현성·감사 가능성)", "이름 충돌 피하고, CLAUDE.md 라우팅에 반영", "라이선스 확인"]],
 ];
-todo.forEach((t, i) => {
-  const y = 1.8 + i * 0.95;
-  card(s, 0.6, y, 12.1, 0.82, i % 2 ? CARD2 : CARD);
-  const done = t[2] === "완료";
-  s.addShape(pres.ShapeType.rect, { x: 0.85, y: y + 0.26, w: 0.3, h: 0.3, fill: { color: done ? CY : BG }, line: { color: CY, width: 1.5 } });
-  if (done) s.addText("✓", { x: 0.85, y: y + 0.19, w: 0.3, h: 0.4, fontFace: HF, fontSize: 14, bold: true, color: BG, align: "center", valign: "middle", isTextBox: true, margin: 0 });
-  s.addText(t[0], { x: 1.4, y, w: 3.2, h: 0.82, fontFace: HF, fontSize: 15, bold: true, color: TXT, valign: "middle", isTextBox: true, margin: 0 });
-  s.addText(t[1], { x: 4.7, y, w: 6.2, h: 0.82, fontFace: BFACE, fontSize: 12.5, color: MUTED, valign: "middle", isTextBox: true, margin: 0 });
-  s.addShape(pres.ShapeType.roundRect, { x: 11.2, y: y + 0.21, w: 1.25, h: 0.4, rectRadius: 0.2, fill: { color: done ? CY_DK : CARD2 }, line: { color: done ? CY : AMBER, width: 1 } });
-  s.addText(t[2], { x: 11.2, y: y + 0.21, w: 1.25, h: 0.4, fontFace: HF, fontSize: 10.5, bold: true, color: TXT, align: "center", valign: "middle", isTextBox: true, margin: 0 });
+add.forEach((it, i) => {
+  const x = 0.6 + i * (3.97 + 0.1);
+  card(s, x, 1.7, 3.97, 3.5, CARD);
+  s.addShape(pres.ShapeType.rect, { x, y: 1.7, w: 3.97, h: 0.1, fill: { color: i === 2 ? AMBER : CY } });
+  cardText(s, x, 1.85, 3.97, it[0], it[1], i === 2 ? AMBER : CY);
+});
+codeBox(s, 0.6, 5.5, 12.1, 0.95, [
+  "# 패턴: 핀 고정 clone → 스킬 복사 → 감사 → 커밋 (ctf-skills 를 넣은 방식과 동일)",
+  "git clone --depth 1 <skill-repo> && cp -r <repo>/<skill> .claude/skills/",
+]);
+
+// =================================================================
+// 8 — Tooling
+// =================================================================
+s = pres.addSlide({ masterName: "DARK" });
+title(s, "구성된 툴링", "WSL ubuntu-ctf 안에 분석 전 카테고리용 도구가 준비됨");
+const tool = [
+  ["Python venv (~/.ctf-tools/venv)", CY, ["pwntools (asm/shellcraft, 원격 익스플로잇)", "angr · unicorn · capstone · keystone", "z3 · sympy · gmpy2 · fpylll (격자)", "volatility3 · scapy · pefile · yara", "ropper · ROPgadget · hlextend · sgp4"]],
+  ["시스템 도구", GREEN, ["gdb 17.1 + gdb-multiarch (ARM/MIPS)", "radare2 6.0.7 · binwalk · nc", "objdump · readelf · nm · strings · file", "Docker 29.1 (챌린지 컨테이너용)"]],
+  ["협업 · 재현", AMBER, ["Codex CLI — 독립 의견 / 코드 리뷰", "uv — 결정적 venv 구성", "frozen requirements (핀 고정 버전)", "setup/provision 스크립트로 1커맨드 재현"]],
+];
+tool.forEach((it, i) => {
+  const x = 0.6 + i * (3.97 + 0.1);
+  card(s, x, 1.7, 3.97, 4.3, CARD);
+  s.addShape(pres.ShapeType.rect, { x, y: 1.7, w: 3.97, h: 0.1, fill: { color: it[1] } });
+  cardText(s, x, 1.85, 3.97, it[0], it[2], it[1]);
 });
 
 // =================================================================
-// Slide 12 — 마무리
+// 9 — Keeping it updated
 // =================================================================
 s = pres.addSlide({ masterName: "DARK" });
-s.addShape(pres.ShapeType.rect, { x: 0.6, y: 2.1, w: 0.7, h: 0.14, fill: { color: CY } });
-s.addText("요약", { x: 0.6, y: 2.35, w: 12, h: 0.8, fontFace: HF, fontSize: 40, bold: true, color: TXT, isTextBox: true, margin: 0 });
-s.addText([
-  { text: "검증된 스킬 + 모델 분업 + 서브에이전트 자동화 + 재현성", options: { fontSize: 18, color: CY, breakLine: true, bold: true } },
-  { text: "을 한 워크스페이스에 담았습니다.", options: { fontSize: 18, color: TXT } },
-], { x: 0.6, y: 3.3, w: 12, h: 0.6, fontFace: HF, isTextBox: true, margin: 0 });
-s.addText([
-  { text: "구축 완료:  ", options: { bold: true, color: TXT } },
-  { text: "전용 ubuntu-ctf + Docker · CTF 도구 174개 · Codex 교차검증 · 리허설 통과", options: { color: MUTED } },
-], { x: 0.6, y: 4.25, w: 12, h: 0.5, fontFace: BFACE, fontSize: 14, isTextBox: true, margin: 0 });
-s.addText([
-  { text: "남은 것:  ", options: { bold: true, color: TXT } },
-  { text: "대회 시작 시 사전 인터뷰 → 규칙 확정 → 풀이. 공유는 원격 저장소로.", options: { color: MUTED } },
-], { x: 0.6, y: 4.85, w: 12, h: 0.5, fontFace: BFACE, fontSize: 14, isTextBox: true, margin: 0 });
-s.addText("git 커밋 완료  ·  docs/BOOTSTRAP.md 로 어디서든 재구축", { x: 0.6, y: 5.6, w: 12, h: 0.4, fontFace: "Consolas", fontSize: 13, color: CY, isTextBox: true, margin: 0 });
+title(s, "업데이트 & 유지", "스킬·툴체인을 안전하게 갱신하고 팀과 동기화");
+const upd = [
+  ["스킬 갱신", ["ctf-skills 를 더 최신 핀 커밋으로 재벤더링", "setup.ps1 이 재현을 돕는다"]],
+  ["툴체인 갱신", ["tools/wsl/ctf-venv-requirements.txt 에 패키지 추가/핀", "ubuntu-ctf 재프로비저닝으로 반영"]],
+  ["동기화", ["git pull 로 다른 머신/단말기와 동기화", "메모리는 머신 로컬 — 리포로는 안 따라감"]],
+  ["공개 리포 위생", ["events/* 는 ignore — 플래그·챌린지 데이터 절대 커밋 금지", "blanket add 대신 특정 경로만 git add"]],
+];
+upd.forEach((it, i) => {
+  const xcol = i % 2, yrow = Math.floor(i / 2);
+  const x = 0.6 + xcol * 6.15, y = 1.75 + yrow * 2.1;
+  card(s, x, y, 5.95, 1.9, CARD);
+  s.addShape(pres.ShapeType.rect, { x, y, w: 0.1, h: 1.9, fill: { color: i === 3 ? AMBER : CY } });
+  cardText(s, x + 0.05, y, 5.9, it[0], it[1], i === 3 ? AMBER : CY);
+});
 
-pres.writeFile({ fileName: "<repo>/docs/CTF-Setup-Deck.pptx" }).then((f) => console.log("WROTE", f));
+// =================================================================
+// 10 — Why it's good (benefits)
+// =================================================================
+s = pres.addSlide({ masterName: "DARK" });
+title(s, "이 프로젝트의 이점", "왜 이렇게 세팅해두면 좋은가");
+const ben = [
+  ["빠른 출발", "스킬 + 툴체인이 미리 준비 — 대회 시작하자마자 분석"],
+  ["안전", "신뢰 못 할 바이너리를 격리 환경에서만 실행 (호스트 보호)"],
+  ["재현성", "새 팀원·새 머신도 clone + 1스크립트로 동일 환경"],
+  ["일관된 품질", "가설→실험→기록 규율 + 15분 룰로 터널링 방지"],
+  ["교차 검증", "Codex 2차 의견으로 편향·실수 감소"],
+  ["팀 공유", "공개 git 로 공유하되 플래그·풀이는 비공개 유지"],
+];
+ben.forEach((it, i) => {
+  const xcol = i % 3, yrow = Math.floor(i / 3);
+  const x = 0.6 + xcol * 4.07, y = 1.8 + yrow * 2.2;
+  card(s, x, y, 3.9, 2.0, CARD);
+  badge(s, x + 0.2, y + 0.22, String(i + 1), i % 2 ? AMBER : CY);
+  s.addText(it[0], { x: x + 0.8, y: y + 0.22, w: 2.95, h: 0.45, fontFace: HF, fontSize: 15, bold: true, color: TXT, isTextBox: true, margin: 0, valign: "middle" });
+  s.addText(it[1], { x: x + 0.22, y: y + 0.85, w: 3.5, h: 1.0, fontFace: BFACE, fontSize: 11.5, color: MUTED, isTextBox: true, margin: 0, valign: "top" });
+});
+
+// =================================================================
+// 11 — References / pointers
+// =================================================================
+s = pres.addSlide({ masterName: "DARK" });
+title(s, "참고 포인터", "더 깊이 들어갈 때 보는 파일들");
+const refs = [
+  ["CLAUDE.md", "운영 규칙 (워크플로·15분 룰·플래그·Codex)"],
+  ["AGENTS.md", "Codex 가 따르는 동일 규칙 미러"],
+  ["docs/BOOTSTRAP.md", "개념 + 새 환경에서 재구축하는 법"],
+  ["docs/WORKLOG.md", "날짜별 전체 구축 이력"],
+  ["docs/PRE-CTF-INTAKE.md", "대회 시작 시 물어볼 인테이크 질문"],
+  ["tools/wsl/*", "setup-ubuntu-ctf.ps1 · provision · frozen reqs"],
+  ["tools/codex-crosscheck.sh", "Codex 독립 의견 / 코드 리뷰"],
+  ["tools/vendor-ctf-skills/", "스킬 출처·핀 커밋·보안 감사 스크립트"],
+];
+refs.forEach((it, i) => {
+  const xcol = i % 2, yrow = Math.floor(i / 2);
+  const x = 0.6 + xcol * 6.15, y = 1.75 + yrow * 1.1;
+  card(s, x, y, 5.95, 0.95, CARD);
+  s.addText(it[0], { x: x + 0.22, y: y + 0.12, w: 5.5, h: 0.38, fontFace: "Consolas", fontSize: 13, bold: true, color: CY, isTextBox: true, margin: 0 });
+  s.addText(it[1], { x: x + 0.22, y: y + 0.5, w: 5.5, h: 0.35, fontFace: BFACE, fontSize: 11, color: MUTED, isTextBox: true, margin: 0 });
+});
+s.addText("github.com/ring7a/ctf-workspace", { x: 0.6, y: 6.5, w: 12, h: 0.4, fontFace: BFACE, fontSize: 13, bold: true, color: AMBER, isTextBox: true, margin: 0 });
+
+pres.writeFile({ fileName: "docs/CTF-Setup-Deck.pptx" }).then((f) => console.log("wrote", f));
