@@ -1,0 +1,163 @@
+### Fri Oct  9 23:46:15 KST 2026 apt-get update
+Get:1 http://security.ubuntu.com/ubuntu resolute-security InRelease [137 kB]
+Hit:2 http://archive.ubuntu.com/ubuntu resolute InRelease
+Get:3 http://archive.ubuntu.com/ubuntu resolute-updates InRelease [137 kB]
+Get:4 http://security.ubuntu.com/ubuntu resolute-security/main amd64 Packages [600 kB]
+Get:5 http://archive.ubuntu.com/ubuntu resolute-backports InRelease [137 kB]
+Get:6 http://security.ubuntu.com/ubuntu resolute-security/main Translation-en [138 kB]
+Get:7 http://security.ubuntu.com/ubuntu resolute-security/main amd64 Components [46.7 kB]
+Get:8 http://security.ubuntu.com/ubuntu resolute-security/universe amd64 Packages [201 kB]
+Get:9 http://archive.ubuntu.com/ubuntu resolute/universe amd64 Packages [16.0 MB]
+Get:10 http://security.ubuntu.com/ubuntu resolute-security/universe Translation-en [65.4 kB]
+Get:11 http://security.ubuntu.com/ubuntu resolute-security/universe amd64 Components [55.6 kB]
+Get:12 http://security.ubuntu.com/ubuntu resolute-security/universe amd64 c-n-f Metadata [3552 B]
+Get:13 http://security.ubuntu.com/ubuntu resolute-security/restricted amd64 Packages [495 kB]
+Get:14 http://security.ubuntu.com/ubuntu resolute-security/restricted Translation-en [99.6 kB]
+Get:15 http://security.ubuntu.com/ubuntu resolute-security/multiverse amd64 Packages [20.0 kB]
+Get:16 http://security.ubuntu.com/ubuntu resolute-security/multiverse Translation-en [3728 B]
+Get:17 http://security.ubuntu.com/ubuntu resolute-security/multiverse amd64 Components [212 B]
+Get:18 http://security.ubuntu.com/ubuntu resolute-security/multiverse amd64 c-n-f Metadata [120 B]
+Get:19 http://archive.ubuntu.com/ubuntu resolute/universe Translation-en [6329 kB]
+Get:20 http://archive.ubuntu.com/ubuntu resolute/universe amd64 Components [4556 kB]
+Get:21 http://archive.ubuntu.com/ubuntu resolute/universe amd64 c-n-f Metadata [313 kB]
+Get:22 http://archive.ubuntu.com/ubuntu resolute/multiverse amd64 Packages [290 kB]
+Get:23 http://archive.ubuntu.com/ubuntu resolute/multiverse Translation-en [127 kB]
+Get:24 http://archive.ubuntu.com/ubuntu resolute/multiverse amd64 Components [50.0 kB]
+Get:25 http://archive.ubuntu.com/ubuntu resolute/multiverse amd64 c-n-f Metadata [8276 B]
+Get:26 http://archive.ubuntu.com/ubuntu resolute-updates/main amd64 Packages [734 kB]
+Get:27 http://archive.ubuntu.com/ubuntu resolute-updates/main Translation-en [173 kB]
+Get:28 http://archive.ubuntu.com/ubuntu resolute-updates/main amd64 Components [110 kB]
+Get:29 http://archive.ubuntu.com/ubuntu resolute-updates/universe amd64 Packages [323 kB]
+Get:30 http://archive.ubuntu.com/ubuntu resolute-updates/universe Translation-en [106 kB]
+Get:31 http://archive.ubuntu.com/ubuntu resolute-updates/universe amd64 Components [201 kB]
+Get:32 http://archive.ubuntu.com/ubuntu resolute-updates/universe amd64 c-n-f Metadata [4704 B]
+Get:33 http://archive.ubuntu.com/ubuntu resolute-updates/restricted amd64 Packages [508 kB]
+Get:34 http://archive.ubuntu.com/ubuntu resolute-updates/restricted Translation-en [101 kB]
+Get:35 http://archive.ubuntu.com/ubuntu resolute-updates/multiverse amd64 Packages [21.0 kB]
+Get:36 http://archive.ubuntu.com/ubuntu resolute-updates/multiverse Translation-en [4168 B]
+Get:37 http://archive.ubuntu.com/ubuntu resolute-updates/multiverse amd64 Components [216 B]
+Get:38 http://archive.ubuntu.com/ubuntu resolute-updates/multiverse amd64 c-n-f Metadata [256 B]
+Get:39 http://archive.ubuntu.com/ubuntu resolute-backports/main amd64 Components [212 B]
+Get:40 http://archive.ubuntu.com/ubuntu resolute-backports/main amd64 c-n-f Metadata [112 B]
+Get:41 http://archive.ubuntu.com/ubuntu resolute-backports/universe amd64 Packages [3136 B]
+Get:42 http://archive.ubuntu.com/ubuntu resolute-backports/universe Translation-en [7988 B]
+Get:43 http://archive.ubuntu.com/ubuntu resolute-backports/universe amd64 Components [1060 B]
+Get:44 http://archive.ubuntu.com/ubuntu resolute-backports/universe amd64 c-n-f Metadata [116 B]
+Get:45 http://archive.ubuntu.com/ubuntu resolute-backports/restricted amd64 Components [216 B]
+Get:46 http://archive.ubuntu.com/ubuntu resolute-backports/restricted amd64 c-n-f Metadata [120 B]
+Get:47 http://archive.ubuntu.com/ubuntu resolute-backports/multiverse amd64 Components [216 B]
+Get:48 http://archive.ubuntu.com/ubuntu resolute-backports/multiverse amd64 c-n-f Metadata [120 B]
+Fetched 32.1 MB in 8s (4230 kB/s)
+Reading package lists...
+### Fri Oct  9 23:46:26 KST 2026 === APT MODE ===
+==> Logging to /home/ctf/.ctf-tools/install-2026-10-09_234626.log
+==> apt: 26/28 packages to install (2 skipped)
+==> Updating apt package lists
+WARNING: apt install failed: sagemath
+
+========================================
+ Install Summary
+========================================
+ Installed: 25
+ Skipped:   2 (already present)
+ Failed:    1
+
+ Failed packages:
+   - apt:sagemath
+========================================
+ Full log: /home/ctf/.ctf-tools/install-2026-10-09_234626.log
+========================================
+apt rc=1
+### Fri Oct  9 23:51:19 KST 2026 === PYTHON MODE ===
+==> Logging to /home/ctf/.ctf-tools/install-2026-10-09_235119.log
+==> PEP 668 detected — creating virtualenv at /home/ctf/.ctf-tools/venv
+The virtual environment was not created successfully because ensurepip is not
+available.  On Debian/Ubuntu systems, you need to install the python3-venv
+package using the following command.
+
+    apt install python3.14-venv
+
+You may need to use sudo with that command.  After installing the python3-venv
+package, recreate your virtual environment.
+
+Failing command: /home/ctf/.ctf-tools/venv/bin/python3
+
+WARNING: venv creation failed — falling back to --user
+==> Installing libgmp-dev (required by gmpy2)
+==> Python: 30/36 packages to install (6 skipped)
+==> Attempting batch install of 30 packages
+WARNING: Batch install failed — falling back to individual installs
+WARNING: pip install failed: pwntools
+WARNING: pip install failed: pycryptodome
+WARNING: pip install failed: z3-solver
+WARNING: pip install failed: gmpy2
+WARNING: pip install failed: hashpumpy
+WARNING: pip install failed: fpylll
+WARNING: pip install failed: py_ecc
+WARNING: pip install failed: ecdsa
+WARNING: pip install failed: angr
+WARNING: pip install failed: frida-tools
+WARNING: pip install failed: qiling
+WARNING: pip install failed: httpx
+WARNING: pip install failed: flask-unsign
+WARNING: pip install failed: sqlmap
+WARNING: pip install failed: ropper
+WARNING: pip install failed: ROPgadget
+WARNING: pip install failed: volatility3
+WARNING: pip install failed: yara-python
+WARNING: pip install failed: pefile
+WARNING: pip install failed: oletools
+WARNING: pip install failed: unicorn
+WARNING: pip install failed: scapy
+WARNING: pip install failed: shodan
+WARNING: pip install failed: uncompyle6
+WARNING: pip install failed: lief
+WARNING: pip install failed: dnspython
+WARNING: pip install failed: dnslib
+WARNING: pip install failed: segno
+WARNING: pip install failed: dissect.cobaltstrike
+WARNING: pip install failed: python-evtx
+
+========================================
+ Install Summary
+========================================
+ Installed: 0
+ Skipped:   6 (already present)
+ Failed:    30
+
+ Failed packages:
+   - pip:pwntools
+   - pip:pycryptodome
+   - pip:z3-solver
+   - pip:gmpy2
+   - pip:hashpumpy
+   - pip:fpylll
+   - pip:py_ecc
+   - pip:ecdsa
+   - pip:angr
+   - pip:frida-tools
+   - pip:qiling
+   - pip:httpx
+   - pip:flask-unsign
+   - pip:sqlmap
+   - pip:ropper
+   - pip:ROPgadget
+   - pip:volatility3
+   - pip:yara-python
+   - pip:pefile
+   - pip:oletools
+   - pip:unicorn
+   - pip:scapy
+   - pip:shodan
+   - pip:uncompyle6
+   - pip:lief
+   - pip:dnspython
+   - pip:dnslib
+   - pip:segno
+   - pip:dissect.cobaltstrike
+   - pip:python-evtx
+========================================
+ Full log: /home/ctf/.ctf-tools/install-2026-10-09_235119.log
+========================================
+python rc=1
+### Fri Oct  9 23:51:31 KST 2026 === DONE ===

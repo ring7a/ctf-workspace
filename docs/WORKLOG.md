@@ -97,3 +97,57 @@ Ran the `install_ctf_tools.sh` pip set directly on the Windows host Python 3.11
   then `wsl -d Ubuntu -u root echo WSL_OK`. If still hanging: unregister +
   reinstall (`wsl --unregister Ubuntu`; `wsl --install -d Ubuntu-24.04`,
   interactive user creation).
+
+## 2026-10-09 (later) — Toolchain moved into project venv
+Per user request, the Python toolchain is now contained in a project venv instead of host global:
+- venv: `.venv-tools/` on E: — 37 packages incl pwntools, angr, z3, volatility3, qiling, etc. (import-verified).
+- Host global cleaned: session-added packages uninstalled; pre-existing (numpy/Pillow/capstone/ecdsa/pycryptodome/requests/pefile/keystone) kept.
+- Use `.venv-tools\Scripts\python.exe` for CTF work.
+- Still absent: fpylll, hashpumpy (need MSVC); gdb/radare2/ghidra/binwalk/nc (need WSL/Docker).
+
+## 2026-10-09 — WSL resolved + dedicated ubuntu-ctf distro
+Reboot fixed the VM boot hang. Findings and actions:
+- A distro already existed: `hrc-rocky` (Rocky Linux 10.1, user hanrim.choi) —
+  a general dev box, NOT a CTF env (no pwntools/gdb). Left untouched; it stays
+  the default distro.
+- Created a DEDICATED CTF distro `ubuntu-ctf` by importing the installed Ubuntu
+  appx rootfs (Ubuntu 26.04.1 LTS, install.tar.gz) via `wsl --import`
+  (unattended, no interactive user prompt). VHD at %USERPROFILE%\WSL\ubuntu-ctf.
+- Provisioned: user `ctf` (passwordless sudo, default user via /etc/wsl.conf),
+  systemd off for fast boot.
+- CTF tools: ran the vendored `install_ctf_tools.sh` (apt + python).
+  - apt mode: OK.
+  - python mode FAILED first time: Ubuntu 26.04 ships Python 3.14 WITHOUT
+    venv/pip, so venv creation and pip both failed ("No module named pip").
+  - FIX: `apt install python3-venv python3-pip python3-dev python3-full
+    build-essential libgmp-dev libmpfr-dev libmpc-dev libffi-dev libssl-dev
+    pkg-config`, remove the half-built venv, re-run python mode.
+
+### Reproduce the whole distro from scratch
+- `pwsh -File tools\wsl\setup-ubuntu-ctf.ps1`
+  (imports ubuntu-ctf from the Ubuntu appx rootfs, then runs
+  `tools\wsl\provision-ubuntu-ctf.sh` as root inside it — user, deps, tools).
+- Logs kept under `docs/wsl-logs/`.
+- Does not touch `hrc-rocky` or the default distro.
+
+## 2026-10-09 — CTF Python tools: 3.14 wheel gap resolved via uv + Python 3.12
+Problem: installing the pinned CTF Python packages on the distro's Python 3.14
+failed widely — no cp314 wheels for numpy 2.2.6 / unicorn / lief, and angr's
+pyvex fails to build on 3.14 (cffi/pycparser parse error).
+Fix (now baked into provision-ubuntu-ctf.sh):
+- Install `uv`, fetch standalone Python 3.12, create venv at ~/.ctf-tools/venv.
+- Install packages individually (pinned, unpinned fallback). One bad pin
+  (`segno==1.6.2`, nonexistent) had aborted uv's atomic resolve; individual
+  mode tolerates it (segno installs unpinned).
+- Two import-time fixes: `pycparser==2.22` (newer breaks `import angr`) and
+  `cysignals` (needed by fpylll).
+Result: 22/22 key modules import OK on Python 3.12.15 (pwn, angr, fpylll,
+volatility3, unicorn, capstone, z3, sympy, gmpy2, scapy, yara, lief, oletools,
+qiling, frida, ...); ROPgadget and ropper CLIs work. venv auto-activates via
+~/.bashrc. Exact set frozen to tools/wsl/ctf-venv-requirements.txt (174 pkgs).
+Logs: docs/wsl-logs/.
+
+### CTF environment is now ready
+- Distro `ubuntu-ctf` (Ubuntu 26.04.1 LTS), user `ctf`, enter with `wsl -d ubuntu-ctf`.
+- Workspace reachable inside WSL at /mnt/e/_/Orca/Projects/ctf.
+- Reproduce from scratch: `pwsh -File tools\wsl\setup-ubuntu-ctf.ps1`.
