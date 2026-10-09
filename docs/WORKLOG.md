@@ -53,3 +53,18 @@ The scaffolding (CLAUDE.md, agents, settings, templates) is tracked in git.
 - Moved workspace from `E:\ctf` to `E:\_\Orca\Projects\ctf`.
 - Updated path references in `.claude/settings.json` (CTF_WORKSPACE) and
   `tools/register-codex-mcp.ps1`. git history preserved (same repo moved).
+
+## 2026-10-09 — WSL setup status (BLOCKED, needs reboot)
+- WSL2 engine present (2.7.13, kernel 6.18); virtualization enabled;
+  vmcompute running. Host-side wsl commands work (`--version`, `--shutdown`).
+- Installed Ubuntu appx and registered rootfs root-only
+  (`ubuntu.exe install --root`, exit 0).
+- BLOCKER: every VM-starting command hangs indefinitely (>240s) and produces
+  no output: `wsl -d Ubuntu ...`, `wsl -l -v`, `wsl -l -q`. Classic
+  "WSL2 utility VM won't boot / needs Windows reboot" signature.
+- NEXT: reboot Windows, then `wsl -d Ubuntu -u root echo WSL_OK`.
+  If still hanging: `wsl --unregister Ubuntu` then reimport a rootfs tarball
+  via `wsl --import` (fully unattended, avoids the Store launcher), or
+  `wsl --install -d Ubuntu-24.04` (interactive user creation).
+- Docker intentionally deferred (runs on WSL2 anyway; add only if a challenge
+  ships a container).
