@@ -10,3 +10,8 @@ events/*/challenges/
 .venv-tools/
 # Rehearsal/practice solve artifacts (downloads + flags)
 events/rehearsal-*/
+# Per-event folders (challenge data, solve notes, flags) are never tracked.
+events/*
+!events/_TEMPLATE/
+!events/_TEMPLATE/**
+!events/README.md
