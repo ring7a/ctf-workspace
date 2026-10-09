@@ -107,7 +107,7 @@ Per user request, the Python toolchain is now contained in a project venv instea
 
 ## 2026-10-09 — WSL resolved + dedicated ubuntu-ctf distro
 Reboot fixed the VM boot hang. Findings and actions:
-- A distro already existed: `hrc-rocky` (Rocky Linux 10.1, user hanrim.choi) —
+- A distro already existed: `hrc-rocky` (Rocky Linux 10.1, a pre-existing non-root user) —
   a general dev box, NOT a CTF env (no pwntools/gdb). Left untouched; it stays
   the default distro.
 - Created a DEDICATED CTF distro `ubuntu-ctf` by importing the installed Ubuntu
