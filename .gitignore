@@ -5,3 +5,5 @@ events/*/challenges/*/untrusted/
 __pycache__/
 *.pyc
 .venv/
+# Entire challenge tree (data + solve work) is untrusted and per-event
+events/*/challenges/
