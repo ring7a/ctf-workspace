@@ -1,0 +1,7 @@
+# Challenge working data and originals are not committed
+events/*/challenges/*/work/
+events/*/challenges/*/untrusted/
+# Python / tool noise
+__pycache__/
+*.pyc
+.venv/
