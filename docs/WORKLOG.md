@@ -48,3 +48,8 @@ Date: 2026-10-09. Host: Windows 10. Operator: Claude Code (Fable 5.1).
 ## How to reproduce from scratch
 See `setup.ps1`. It re-clones the pinned skills and rebuilds the skills dir.
 The scaffolding (CLAUDE.md, agents, settings, templates) is tracked in git.
+
+## 2026-10-09 — Relocation
+- Moved workspace from `E:\ctf` to `E:\_\Orca\Projects\ctf`.
+- Updated path references in `.claude/settings.json` (CTF_WORKSPACE) and
+  `tools/register-codex-mcp.ps1`. git history preserved (same repo moved).
