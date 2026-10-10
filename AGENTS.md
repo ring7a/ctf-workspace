@@ -31,6 +31,11 @@ the switch reason in NOTES.md. Do not tunnel.
 - Keep original challenge files in `<challenge>/untrusted/`. Do all work in
   `<challenge>/work/`. Pass paths as arguments; never run an interpreter from
   inside the untrusted directory. Run analysis Python with `python -I`.
+- Windows+WSL+Bash-tool gotchas and their fixes (path styles, why background
+  processes die, the tmux pattern for persistent servers/tunnels, SSRF-callback
+  tunnels) are in `docs/TROUBLESHOOTING.md`. Read it before fighting the shell.
+  Persistent work runs in a tmux session (`tmux new-session -d -s ctf`); the user
+  can attach with `wsl -d ubuntu-ctf -- tmux attach -t ctf`.
 
 ## Reporting format
 Every status update is three lines:
