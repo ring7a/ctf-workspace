@@ -53,9 +53,12 @@ wsl -d ubuntu-ctf bash -lc "tmux capture-pane -t ctf:srv -p | tail -20"
   process (e.g. an `ssh` tunnel). The keystrokes go to *that process's stdin*, not a
   shell — your "restart" silently no-ops. Give each long-running foreground process
   its own window, and run shell commands in a different one.
-- Restarting a server: force-free the port first (`pkill -9 -f server.py; fuser -k
-  <port>/tcp; sleep 2`) or the new process fails to bind and the **old** code keeps
-  serving (you'll chase ghost behaviour).
+- Restarting a server: force-free the port first or the new process fails to bind and
+  the **old** code keeps serving (you'll chase ghost behaviour). **Kill by port, not by
+  name:** `fuser -k <port>/tcp`. `pkill -f server.py` run from a shell whose own command
+  line contains `server.py` **kills its own parent shell** (you'll see exit 9/SIGKILL and
+  the restart never happens) — if you must match by name, use a bracket (`pkill -f
+  '[s]erver.py'`) *and* keep the literal name out of the rest of that command.
 
 ## 4. `python3` inline in the **outer** Git Bash is unreliable
 `python3 -c "..."` from the Bash tool can emit stray `Python` banners / exit non-zero
@@ -70,12 +73,21 @@ break the outer parse), and long pipelines sometimes come back **empty with exit
 through the bridge. Keep each WSL invocation **simple and single-purpose**; write
 results to a file and read the file in a follow-up call rather than chaining.
 
-## 6. pwntools remote/interactive I/O doesn't flush through the bridge
-`io.interactive()`, blocking `recv` loops, and `io.poll(block=True)` hang and their
-output often never reaches the captured stdout. Workarounds: use explicit timeouts and
-non-blocking reads, redirect the script's stdout to a file and `cat` it, or run the
-whole exploit inside a **tmux** window and `capture-pane`. Native execution of untrusted
-binaries must still happen inside `ubuntu-ctf`, never on the host.
+## 6. pwntools over WSL: non-interactive works directly; interactive needs tmux
+**The practical win (proved on PWN1 & PWN2):** a pwntools exploit written
+**non-interactively** runs fine with a plain `wsl -d ubuntu-ctf bash -lc "python3
+exploit.py remote"` — no tmux needed. The trick is to **send everything, then pull the
+result**: `io.sendlineafter(prompt, payload)` for each step, and read with
+`io.recvuntil(b'MARKER', timeout=4)` / `io.recvall(timeout=5)` and a regex for the flag.
+After popping a shell, don't call `io.interactive()` — instead
+`io.sendline(b'cat /flag; echo DONE'); data = io.recvuntil(b'DONE', timeout=4)`.
+What **hangs** through the bridge is truly interactive I/O: `io.interactive()`, blocking
+`recv()` loops, `io.poll(block=True)` — their output often never reaches captured stdout.
+If a challenge genuinely needs back-and-forth, run the exploit inside a **tmux** window
+and `capture-pane` (see §3). Set `context.log_level='warning'` to keep output small, and
+redirect to a file if it's large. Native execution of untrusted binaries stays inside
+`ubuntu-ctf`, never the host. All 5 remote services were reachable from WSL
+(`socket.create_connection`), so remote exploits run straight from `ubuntu-ctf`.
 
 ## 7. Public tunnel for SSRF callbacks / redirectors (no account, no install)
 When a challenge needs an **external URL the target can reach** (SSRF callback, an
@@ -103,4 +115,6 @@ ssh -o StrictHostKeyChecking=accept-new -R 80:localhost:8111 nokey@localhost.run
 | "restart" of a server does nothing | send-keys hit a foreground ssh pane / old proc holds the port | separate window + `fuser -k <port>/tcp` |
 | empty output, exit 9 | compound/nested WSL command | one simple action per call, read from a file |
 | garbage `Python` in output | `python3 -c` in outer Git Bash | run Python inside WSL, or use `curl`/`jq` |
-| pwntools output never appears | interactive I/O through the bridge | file redirect + timeouts, or tmux `capture-pane` |
+| pwntools `io.interactive()` hangs | interactive I/O through the bridge | write it non-interactive: `sendlineafter` + `recvuntil(MARK,timeout)`; or tmux `capture-pane` |
+| exit 9 / shell dies on `pkill -f X` | `X` is in the shell's own command line → kills itself | kill by port (`fuser -k N/tcp`) or bracket (`[X]`) + keep name out of the command |
+| remote pwn exploit | — | works directly: `wsl -d ubuntu-ctf bash -lc "python3 exp.py remote"` (services reachable from WSL) |
