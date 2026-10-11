@@ -1,31 +1,31 @@
-# Pre-CTF Intake — questions the AI must get answered before solving
+# 사전 인테이크 — 풀이 시작 전 AI가 반드시 답을 받아야 하는 질문들
 
-At the start of any event, before touching challenges, the agent asks the user
-these and records the answers in `events/<event>/NOTES.md`. Do not start
-solving until the **blocking** items (marked [!]) are answered — proceeding
-without them risks rule violations or wasted work.
+이벤트 시작 시, 챌린지를 건드리기 전에, 에이전트는 사용자에게 아래 질문을 하고
+답변을 `events/<event>/NOTES.md`에 기록한다. 차단(blocking) 항목([!] 표시)에
+답을 얻기 전에는 풀이를 시작하지 않는다 — 이것들 없이 진행하면 규칙 위반이나
+헛수고의 위험이 있다.
 
-## Rules & authorization  [!]
-1. Does the participation agreement ALLOW AI tools? Any limits (e.g. no
-   automated scanning, no external/cloud services, must be human-submitted)?
-2. Flag format and exact regex? (e.g. `FLAG{...}`, `MARINE{...}`)
-3. Scoreboard URL and how to submit. Wrong-flag penalty or lockout?
-4. In-scope targets (hosts/CIDRs/URLs) — what MAY we touch?
-5. Out-of-scope / forbidden (scoreboard, other teams, infra, the platform
-   itself, DoS, brute force)? Rate limits on challenge servers?
+## 규칙 & 권한  [!]
+1. 참가 규정이 AI 도구를 허용하는가? 제한이 있는가 (예: 자동 스캔 금지,
+   외부/클라우드 서비스 금지, 반드시 사람이 제출)?
+2. 플래그 형식과 정확한 정규식? (예: `FLAG{...}`, `MARINE{...}`)
+3. 스코어보드 URL과 제출 방법. 오답 패널티나 잠금(lockout)이 있는가?
+4. 스코프 내 대상(호스트/CIDR/URL) — 무엇을 건드려도 되는가?
+5. 스코프 밖 / 금지 대상(스코어보드, 다른 팀, 인프라, 플랫폼 자체, DoS,
+   무차별 대입)? 챌린지 서버의 속도 제한(rate limit)?
 
-## Access & logistics
-6. Event window: start, end, timezone.
-7. How do we get challenge files (download link, attachments, per-challenge)?
-8. Network: VPN/proxy required? Offline segment for the final?
-9. Team: members, who owns which categories, shared account or individual?
-10. Any rule on sharing writeups or tooling during/after the event?
+## 접근 & 운영
+6. 이벤트 기간: 시작, 종료, 시간대.
+7. 챌린지 파일은 어떻게 받는가 (다운로드 링크, 첨부, 챌린지별)?
+8. 네트워크: VPN/프록시 필요? 본선용 오프라인 구간?
+9. 팀: 구성원, 카테고리별 담당자, 공용 계정인가 개별 계정인가?
+10. 이벤트 중/후 라이트업이나 도구 공유에 대한 규칙?
 
-## Working agreements
-11. Who submits flags (default: a human submits after `verifier` checks format)?
-12. Where to record progress (default: per-challenge NOTES.md + event NOTES.md)?
-13. Priorities — categories we're strongest/weakest in, target score?
+## 작업 합의
+11. 누가 플래그를 제출하는가 (기본값: `verifier`가 형식을 확인한 뒤 사람이 제출)?
+12. 진행 상황은 어디에 기록하는가 (기본값: 챌린지별 NOTES.md + 이벤트 NOTES.md)?
+13. 우선순위 — 가장 강한/약한 카테고리, 목표 점수?
 
-The agent should ask these concisely (group them), accept "unknown / N/A",
-and write the answers into the event NOTES.md "Rules" section before work
-begins. Re-ask the blocking items if the event rules change mid-competition.
+에이전트는 이 질문들을 간결하게(묶어서) 묻고, "모름 / 해당 없음"도 허용하며,
+작업 시작 전에 답변을 이벤트 NOTES.md의 "Rules" 섹션에 기록해야 한다. 대회 중
+규칙이 바뀌면 차단 항목을 다시 물어본다.
