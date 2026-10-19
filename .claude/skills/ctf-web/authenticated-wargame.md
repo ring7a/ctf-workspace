@@ -101,6 +101,15 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   아니면 NOTES에 "인프라 게이트"로 적고 넘어간다 (old-31, old-37). **로그/IP 게이트도 동종**: 로그인젝션으로
   `<내IP>:admin` 라인을 깨끗이 만들어도, 솔브 체크가 쓰는 `REMOTE_ADDR`이 **프록시 내부 주소**라 외부에서 관측·주입
   불가면 풀 수 없다. XFF/X-Real-IP 등 포워딩 헤더가 무시되는지 확인하고, 그렇다면 인프라게이트로 판정 (old-38).
+- **admin-bot 문제의 3-way 게이트 분류(막힘을 뭉뚱그리지 말 것)**: "INFRA-GATED"로 뭉쳐 적지 말고 실제 벽을 구분한다.
+  (a) **인프라 게이트** — 싱크·전달 경로는 있는데 공인 리스너만 없음. 아래 방법으로 **해제 가능**(BABY·CHILD가 이 경우였음).
+  (b) **권한 게이트** — 공격자 제어 데이터가 스크립트 실행 컨텍스트에 닿는 경로가 **구조적으로 없음**(의도된 싱크가 관리자
+  전용 페이지에만 존재). 리스너가 있어도 무의미. 전 엔드포인트/파라미터/verb/content-type 재열거 + report가 방문하는
+  페이지가 url을 반영/쿠키세팅 하는지까지 확인하고 그래도 없으면 **계정에서 dead-end**로 판정 (PRO :10011).
+  (c) **앱 데드엔드(self-XSS)** — 싱크는 있으나 그 트리거가 **클라이언트 로컬 상태(예: 자기 쿠키)**에만 의존하고,
+  admin 브라우저에 그 상태를 심을 경로가 없음. report.php가 host:port를 고정 prefix로 붙여 오픈리다이렉트/외부 URL이
+  안 되고, 페이지 JS가 `location.hash/search`가 아니라 `document.cookie`만 읽으면 전달 불가 → self-XSS로만 성립 (MEMO :10013).
+  bot 생존은 same-origin 404 방문이면 아웃바운드가 없어 **관측 불가**일 수 있음(다른 문제에서만 생존 확인됨).
 - **공인 인바운드를 계정·설치 없이 확보(= admin-bot/콜백 게이트 해제)**: NAT 뒤라도 아웃바운드 80/443만 열려 있으면
   공인 리스너를 무상·무가입으로 세울 수 있다. 용도별로 둘로 나뉜다.
   (1) **콜백을 받기만** 하면 되는 경우(관측값이 요청 URL/헤더에 실려 옴): `webhook.site` 토큰이면 충분 —
@@ -199,6 +208,11 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   attacker의 script.js가 유효 nonce로 실행된다. 이후 쿠키 반출(default-src 없으면 자유). **인프라는 해제 가능**(과거 NAT로
   막힌다고 적었으나 오판): `/script.js`를 **루트 경로**로 서빙해야 하므로 webhook.site로는 안 되고 serveo 리버스 SSH 터널이
   필요하다(위 "공인 인바운드" (2)). **BABY :10010에서 실제 해결**(admin HeadlessChrome가 터널의 /script.js를 로드).
+- **sprintf-js `%c`로 따옴표 필터 우회**: 싱크가 `sprintf("...value='%s'...", memo)` 꼴이고 입력의 `'`가 `"`로
+  치환돼 속성 탈출이 막힌 경우, **sprintf-js의 `%c`는 `String.fromCharCode(parseInt(arg,10))`**라서 `%c`+인자 `"39"`로
+  **치환 이후** 리터럴 `'`(0x27)를 만들어낼 수 있다. 특히 앱이 누적 문자열에 sprintf를 매 반복 재적용하면 앞 항목의
+  `%c`가 뒤에서 살아있는 포맷 지정자가 된다 → 따옴표 없이 `%c><img src=x onerror=...>`로 속성·태그 탈출. (MEMO :10013에서
+  실측 — 단 그 문제는 전달 경로가 없어 self-XSS에 그침. 버그 자체는 재사용 가능.)
 - **JSON 중복키 파서 불일치(PHP↔MySQL)**: 가입이 raw `php://input`을 그대로 저장하고 로그인이 `JSON_EXTRACT(data,'$.role')`를
   쓰면, **PHP `json_decode`는 중복키의 LAST를, MySQL JSON 파서는 FIRST를** 취한다. 검증(`role==="guest"`)은 PHP가 보는 LAST로
   통과시키고, 권한 평가는 MySQL이 보는 FIRST로 상승 → body `{"userid":"aaaaa","userpw":"aaaaa","role":"admin","role":"guest"}`
