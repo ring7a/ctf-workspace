@@ -2,13 +2,16 @@
 name: ctf-web
 description: Provides web exploitation techniques for CTF challenges. Use when the target is primarily an HTTP application, API, browser client, template engine, identity flow, or smart-contract frontend/backend surface, including XSS, SQLi, SSTI, SSRF, XXE, JWT, auth bypass, file upload, request smuggling, OAuth/OIDC, SAML, prototype pollution, and similar web bugs. Do not use it for native binary memory corruption, reverse engineering of standalone executables, disk or memory forensics, or pure cryptanalysis unless the web flaw is still the main path to the flag.
 license: MIT
-compatibility: Requires filesystem-based agent (Claude Code or similar) with bash, Python 3, and internet access for tool installation.
 allowed-tools: Bash Read Write Edit Glob Grep Task WebFetch WebSearch
 metadata:
   user-invocable: "false"
 ---
 
 # CTF Web Exploitation
+
+> Workspace integration: read [the local execution and evidence rules](../../../docs/SKILL-INTEGRATION.md) before using these examples.
+
+Tool requirements: Requires filesystem-based agent (Claude Code, Codex or similar) with bash, Python 3, and internet access for tool installation.
 
 Use this skill as a routing and execution guide for web-heavy challenges. Keep the first pass short: map the app, confirm the trust boundary, and only then dive into the detailed technique notes.
 
@@ -38,8 +41,8 @@ go install github.com/ffuf/ffuf/v2@latest
 - ysoserial — [GitHub](https://github.com/frohoff/ysoserial), requires Java (Java deserialization payloads)
 - PayloadsAllTheThings — git clone to ctf-web/payloads/PayloadsAllTheThings (auto via install script or lazy clone)
   ```bash
-  bash scripts/install_ctf_tools.sh pat   # PAT only
-  bash scripts/install_ctf_tools.sh all   # all tools including PAT
+  bash tools/vendor-ctf-skills/scripts/install_ctf_tools.sh pat   # PAT only
+  bash tools/vendor-ctf-skills/scripts/install_ctf_tools.sh all   # all tools including PAT
   # manual fallback:
   git clone --depth 1 https://github.com/swisskyrepo/PayloadsAllTheThings.git ctf-web/payloads/PayloadsAllTheThings
   ```
@@ -67,6 +70,7 @@ go install github.com/ffuf/ffuf/v2@latest
 - [web3.md](web3.md) - Solidity and Web3 challenge notes
 - [cves.md](cves.md) - CVE-driven techniques you can match against challenge banners, headers, dependency leaks, or version strings
 - [field-notes.md](field-notes.md) - Long-form exploit notes: quick references for SQLi, XSS, LFI, JWT, SSTI, SSRF, command injection, XXE, deserialization, race conditions, auth bypass, and multi-stage chains
+- [agent-browser.md](agent-browser.md) - 라이브 웹 상호작용(반복 자동화 트랙): agent-browser(Vercel Labs CDP CLI, 접근성 트리 @eN ref) 운용 — 역할 분담(실제 로그인 조작=claude-in-chrome MCP / 자동화·HAR→API 클라이언트·녹화=agent-browser / 수동=curl·requests), 커맨드 매핑, 세션 격리, 현재 호스트 상태
 - [python-requests.md](python-requests.md) - Python requests toolkit: session scaffold, Burp-Intruder-like fuzzer (sync + ThreadPoolExecutor + httpx async), payload deploy from pat-reference.md wordlists, header/param spray, cookie/JWT, proxy
 - [pat-reference.md](pat-reference.md) — PayloadsAllTheThings index: bulk payloads for XSS/SQLi/SSRF/SSTI/LFI/Command Injection/Upload (requires PAT clone, see Prerequisites)
 

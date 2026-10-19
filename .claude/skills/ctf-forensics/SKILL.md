@@ -2,13 +2,16 @@
 name: ctf-forensics
 description: Provides digital forensics and signal analysis techniques for CTF challenges. Use when analyzing disk images, memory dumps, event logs, network captures, cryptocurrency transactions, steganography, PDF analysis, Windows registry, Volatility, PCAP, Docker images, coredumps, side-channel power traces, DTMF audio spectrograms, packet timing analysis, CD audio disc images, or recovering deleted files and credentials.
 license: MIT
-compatibility: Requires filesystem-based agent (Claude Code or similar) with bash, Python 3, and internet access for tool installation.
 allowed-tools: Bash Read Write Edit Glob Grep Task WebFetch WebSearch
 metadata:
   user-invocable: "false"
 ---
 
 # CTF Forensics & Blockchain
+
+> Workspace integration: read [the local execution and evidence rules](../../../docs/SKILL-INTEGRATION.md) before using these examples.
+
+Tool requirements: Requires filesystem-based agent (Claude Code, Codex or similar) with bash, Python 3, and internet access for tool installation.
 
 Quick reference for forensics CTF challenges. Each technique has a one-liner here; see supporting files for full details.
 
@@ -43,6 +46,8 @@ gem install zsteg
 - [network.md](network.md) - Network forensics basics (tcpdump, TLS/SSL keylog decryption, TLS master key extraction from coredump, Wireshark, PCAP, port scanning, SMB3 decryption, 5G/NR protocols, WordPress recon, credentials, USB HID steno, BCD encoding, HTTP file upload exfiltration, split archive reassembly via timestamp ordering)
 - [network-advanced.md](network-advanced.md) - Advanced network forensics (packet interval timing encoding, NTLMv2 hash cracking, TCP flag covert channel, DNS last-byte steganography, DNS trailing byte binary encoding, multi-layer PCAP with XOR + ZIP and mDNS key, Brotli decompression bomb seam analysis, SMB RID recycling via LSARPC, Timeroasting MS-SNTP hash extraction, dnscat2 reassembly, RADIUS shared secret cracking, RC4 stream identification, ICMP payload byte rotation, ICMP ping time-delay covert channel)
 - [peripheral-capture.md](peripheral-capture.md) - USB/HID/Bluetooth peripheral traffic reconstruction (USB HID mouse/pen drawing recovery, USB HID keyboard capture decoding, USB keyboard LED Morse code exfiltration, USB HID keyboard arrow key navigation tracking, Bluetooth RFCOMM packet reassembly)
+- [memory-volatility.md](memory-volatility.md) - **Workspace procedure (local): Volatility 3 first on every memory image** — 10-minute triage order, question→plugin map, Linux ISF decision tree (public ISF → dwarf2json → BTF via `tools/volatility/scripts`), kernel keyring plugin for LUKS2/dm-crypt volume keys, shell-history recovery from process heaps, dm-crypt IV pitfall, evidence-recording rules
+- [autopsy-mcp.md](autopsy-mcp.md) - **Workspace procedure (local): Autopsy MCP first on every disk image (.vmdk/.e01/.dd/.raw/.vhdx)** — examiner opens the case in Autopsy GUI, then query read-only via `mcp__autopsy__*` (files/timeline/data-artifacts/analysis-results/os-accounts/file-content); setup + `tools/autopsy/autopsy-mcp.sh` connection probe, triage query order, question→query map, gotchas (data-source scoping, timestamps returned in UTC, `totalArtifacts:0` = ingest incomplete, Prefetch file-time technique when Recent Activity hasn't run, SQLite slack string carving), evidence-recording rules
 - [disk-and-memory.md](disk-and-memory.md) - Core disk/memory forensics (Volatility, disk mounting/carving, VM/OVA/VMDK, VMware snapshots, GIMP raw memory dump visual inspection, coredumps, Windows KAPE triage, PowerShell ransomware, Android forensics, Docker container forensics, cloud storage forensics, BSON reconstruction, TrueCrypt/VeraCrypt mounting)
 - [disk-advanced.md](disk-advanced.md) - Advanced disk and memory techniques (deleted partitions, ZFS forensics, GPT GUID encoding, VMDK sparse parsing, memory dump string carving, ransomware key recovery, WordPerfect macro XOR, minidump ISO 9660 recovery, APFS snapshot recovery, RAID 5 XOR recovery, HFS+ resource fork recovery, Kyoto Cabinet hash DB forensics, SQLite edit history reconstruction)
 - [disk-recovery.md](disk-recovery.md) - Disk recovery and extraction patterns (LUKS master key recovery, PRNG timestamp seed brute-force, VBA macro binary recovery, FemtoZip decompression, XFS filesystem reconstruction, tar duplicate entry extraction, nested matryoshka filesystem extraction, anti-carving via null byte interleaving, BTRFS subvolume/snapshot recovery, FAT16 free space data recovery, FAT16 deleted file recovery via Sleuth Kit fls/icat, ext2 orphaned inode recovery via fsck, corrupted ZIP header repair)
@@ -79,10 +84,12 @@ sudo mount -o loop,ro image.dd /mnt/evidence
 fls -r image.dd              # List files
 photorec image.dd            # Carve deleted files
 
-# Memory forensics (Volatility 3)
-vol -f memory.dmp windows.info
+# Memory forensics (Volatility 3) — workspace rule: run Volatility BEFORE strings/carving on any memory image
+# wrapper adds tools/volatility/symbols + plugins: powershell -File tools/volatility/vol.ps1 (host) / bash tools/volatility/vol.sh (ubuntu-ctf)
+vol -f memory.dmp windows.info                 # Linux: banners.Banners, then linux.pslist / mountinfo / lsmod / kmsg
 vol -f memory.dmp windows.pslist
 vol -f memory.dmp windows.filescan
+# Linux image with no public ISF -> build one from the kernel's BTF: see memory-volatility.md §3
 ```
 
 See [disk-and-memory.md](disk-and-memory.md) for full Volatility plugin reference, VM forensics, and coredump analysis.
