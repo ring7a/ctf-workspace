@@ -1,55 +1,66 @@
-# Create and provision a dedicated "ubuntu-ctf" WSL2 distro for CTF work.
-# Portable: derives the repo root from its own location (no hardcoded paths).
-# Does NOT touch any existing distro or change the default distro.
-#
-# Prereq: WSL2 engine present (`wsl --version` works) and an Ubuntu rootfs
-# tarball available (an installed Ubuntu appx, or pass -Tarball).
-#
-# Usage:  pwsh -File tools\wsl\setup-ubuntu-ctf.ps1
+# Import a NEW WSL2 distro; never reprovision an existing registration.
+# Usage (Windows PowerShell 5.1 or PowerShell 7):
+#   powershell -File tools\wsl\setup-ubuntu-ctf.ps1 [-Tarball rootfs.tar.gz] [-NoDocker]
 param(
-  [string]$Distro     = "ubuntu-ctf",
-  [string]$InstallDir = "$env:USERPROFILE\WSL\ubuntu-ctf",
-  [string]$Tarball    = ""
+  [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]*$')]
+  [string]$Distro = "ubuntu-ctf",
+  [string]$InstallDir = "",
+  [string]$Tarball = "",
+  [switch]$NoDocker
 )
 $ErrorActionPreference = "Stop"
 
-# Convert a Windows path to its /mnt/<drive>/... WSL form in pure PowerShell.
-# (Do NOT shell out to `wsl wslpath` — WSL interop eats the backslashes.)
-function ConvertTo-WslPath([string]$p) {
-  $full  = (Resolve-Path $p).Path
-  $drive = $full.Substring(0,1).ToLower()
-  $rest  = $full.Substring(2) -replace '\\','/'
-  return "/mnt/$drive$rest"
+function Invoke-WslChecked {
+  param([string[]]$ArgumentList)
+  & wsl.exe @ArgumentList
+  if ($LASTEXITCODE -ne 0) { throw "wsl.exe failed (exit $LASTEXITCODE): $($ArgumentList -join ' ')" }
 }
 
-# Repo root = two levels up from this script (tools/wsl -> repo).
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-# Same path as seen from inside WSL (e.g. E:\_\Orca\Projects\ctf-workspace -> /mnt/e/_/Orca/Projects/ctf-workspace).
-$RepoWsl  = ConvertTo-WslPath $RepoRoot
-Write-Host "Repo (Windows): $RepoRoot"
-Write-Host "Repo (WSL):     $RepoWsl"
+function ConvertTo-WslPath([string]$Path) {
+  $full = (Resolve-Path -LiteralPath $Path).ProviderPath
+  if ($full -notmatch '^[A-Za-z]:\\') { throw "Use a local Windows drive path: $full" }
+  return "/mnt/$($full.Substring(0,1).ToLower())$($full.Substring(2) -replace '\\','/')"
+}
 
-# 1) Locate an Ubuntu rootfs tarball (reuse installed appx by default; no download).
+Get-Command wsl.exe -ErrorAction Stop | Out-Null
+$registered = @(Invoke-WslChecked -ArgumentList @('--list', '--quiet'))
+$registered = @($registered | ForEach-Object { ($_ -replace "`0", '').Trim() })
+if ($registered -contains $Distro) {
+  throw "Distro '$Distro' already exists; no changes made. Choose a new -Distro and -InstallDir."
+}
+
+$RepoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).ProviderPath
+$RepoWsl = ConvertTo-WslPath $RepoRoot
+$prov = Join-Path $PSScriptRoot 'provision-ubuntu-ctf.sh'
+if (-not (Test-Path -LiteralPath $prov -PathType Leaf)) { throw "Missing $prov" }
+if (-not $InstallDir) { $InstallDir = Join-Path $env:USERPROFILE "WSL\$Distro" }
+$InstallDir = [IO.Path]::GetFullPath($InstallDir)
+if (Test-Path -LiteralPath $InstallDir) {
+  if (-not (Test-Path -LiteralPath $InstallDir -PathType Container)) { throw "Not a directory: $InstallDir" }
+  if (@(Get-ChildItem -LiteralPath $InstallDir -Force).Count) { throw "Install directory is not empty: $InstallDir" }
+}
+
 if (-not $Tarball) {
-  $appx = (Get-AppxPackage *Ubuntu*).InstallLocation | Select-Object -First 1
-  if (-not $appx) { throw "No Ubuntu appx found. Run `wsl --install -d Ubuntu --no-launch`, or pass -Tarball." }
-  $Tarball = Join-Path $appx "install.tar.gz"
+  $Tarball = Get-AppxPackage *Ubuntu* | ForEach-Object {
+    Join-Path $_.InstallLocation 'install.tar.gz'
+  } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+  if (-not $Tarball) { throw 'No Ubuntu rootfs tarball found. Pass -Tarball with an Ubuntu rootfs archive.' }
 }
-if (-not (Test-Path $Tarball)) { throw "Rootfs tarball not found: $Tarball" }
-Write-Host "Using rootfs: $Tarball"
-
-# 2) Import as a new distro (registers as root; no interactive user prompt).
+if (-not (Test-Path -LiteralPath $Tarball -PathType Leaf)) { throw "Rootfs tarball not found: $Tarball" }
+$Tarball = (Resolve-Path -LiteralPath $Tarball).ProviderPath
+Write-Host "Importing NEW distro $Distro -> $InstallDir (WSL2)"
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-Write-Host "Importing $Distro -> $InstallDir ..."
-wsl --import $Distro $InstallDir $Tarball
+Invoke-WslChecked -ArgumentList @('--import', $Distro, $InstallDir, $Tarball, '--version', '2')
 
-# 3) Run the provisioning script inside the distro as root, passing REPO.
-$prov = Join-Path $PSScriptRoot "provision-ubuntu-ctf.sh"
-if (-not (Test-Path $prov)) { throw "Missing $prov" }
-$provWsl = ConvertTo-WslPath $prov
-Write-Host "Provisioning (installs CTF tools; takes a while)..."
-wsl -d $Distro -u root bash -c "sed 's/\r`$//' '$provWsl' > /root/provision.sh; REPO='$RepoWsl' bash /root/provision.sh"
-
-# 4) Apply wsl.conf (default user) by terminating the distro.
-wsl --terminate $Distro
-Write-Host "Done. Enter with:  wsl -d $Distro"
+# Pass paths as argv, never interpolate them into shell source. Strip CRLF on stdin.
+$docker = if ($NoDocker) { '0' } else { '1' }
+$provisionText = (Get-Content -LiteralPath $prov -Encoding UTF8 -Raw).Replace("`r", '')
+$provisionText | & wsl.exe -d $Distro -u root -- env "REPO=$RepoWsl" "INSTALL_DOCKER=$docker" bash -s
+if ($LASTEXITCODE -ne 0) {
+  throw "Provisioning failed (exit $LASTEXITCODE). Distro '$Distro' is retained for diagnosis; it was not deleted."
+}
+Invoke-WslChecked -ArgumentList @('--terminate', $Distro)
+if (-not $NoDocker) {
+  Invoke-WslChecked -ArgumentList @('-d', $Distro, '-u', 'root', '--', 'docker', 'info', '--format', '{{.ServerVersion}}')
+}
+Write-Host "Done. Enter with: wsl -d $Distro"

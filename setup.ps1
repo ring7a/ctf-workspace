@@ -1,31 +1,40 @@
-# Rebuilds the vendored CTF skills from the pinned upstream commit.
-# Scaffolding (CLAUDE.md, .claude/agents, settings, templates) is tracked in git.
-# Usage:  pwsh -File setup.ps1
+# Offline agent-asset setup. This does not install WSL or either model CLI.
+# Upstream downloads are review-only and never overwrite the vendored assets.
+[CmdletBinding()]
+param([switch]$FetchUpstream)
 $ErrorActionPreference = "Stop"
-$Pinned = "c332c7be1b27cb64639a20124ac55ba916adef92"
-$Root = $PSScriptRoot
-$Tmp = Join-Path $env:TEMP ("ctf-skills-" + [guid]::NewGuid().ToString("N"))
+Set-StrictMode -Version Latest
+$Root = [System.IO.Path]::GetFullPath($PSScriptRoot)
 
-Write-Host "Cloning ljagiello/ctf-skills @ $Pinned ..."
-git clone https://github.com/ljagiello/ctf-skills $Tmp | Out-Null
-git -C $Tmp checkout $Pinned | Out-Null
-
-$Skills = "ctf-ai-ml","ctf-crypto","ctf-forensics","ctf-malware","ctf-misc",
-          "ctf-osint","ctf-pwn","ctf-reverse","ctf-web","ctf-writeup","solve-challenge"
-$Dest = Join-Path $Root ".claude\skills"
-New-Item -ItemType Directory -Force -Path $Dest | Out-Null
-foreach ($s in $Skills) {
-    $target = Join-Path $Dest $s
-    if (Test-Path $target) { Remove-Item -Recurse -Force $target }
-    Copy-Item -Recurse (Join-Path $Tmp $s) $target
-    Write-Host "  installed $s"
+function Invoke-CheckedNative {
+    param([string]$Executable, [string[]]$Arguments)
+    & $Executable @Arguments
+    if ($LASTEXITCODE -ne 0) { throw "$Executable failed with exit code $LASTEXITCODE" }
 }
-$Vendor = Join-Path $Root "tools\vendor-ctf-skills"
-New-Item -ItemType Directory -Force -Path $Vendor | Out-Null
-Copy-Item -Recurse -Force (Join-Path $Tmp "scripts") (Join-Path $Vendor "scripts")
-Copy-Item -Force (Join-Path $Tmp "README.md") $Vendor
-Copy-Item -Force (Join-Path $Tmp "LICENSE") $Vendor
-$Pinned | Out-File -Encoding ascii (Join-Path $Vendor "PINNED_COMMIT.txt")
 
-Remove-Item -Recurse -Force $Tmp
-Write-Host "Done. $($Skills.Count) skills installed into $Dest"
+$Python = Get-Command python -ErrorAction SilentlyContinue
+if (-not $Python) { throw "Python 3.11+ is required. Or run python -I tools/check-workspace.py --sync inside ubuntu-ctf." }
+Invoke-CheckedNative $Python.Source @("-I", "-c", "import sys; sys.exit(0 if sys.version_info >= (3,11) else 1)")
+Invoke-CheckedNative $Python.Source @("-I", (Join-Path $Root "tools/check-workspace.py"), "--sync")
+
+if ($FetchUpstream) {
+    $Git = Get-Command git -ErrorAction Stop
+    $Pin = (Get-Content -LiteralPath (Join-Path $Root "tools/vendor-ctf-skills/PINNED_COMMIT.txt") -Raw).Trim()
+    if ($Pin -notmatch '^[0-9a-f]{40}$') { throw "Invalid upstream commit pin" }
+    $TempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+    $Review = [System.IO.Path]::GetFullPath((Join-Path $TempRoot ("ctf-upstream-review-" + [guid]::NewGuid().ToString("N"))))
+    if (-not $Review.StartsWith($TempRoot, [System.StringComparison]::OrdinalIgnoreCase) -or (Test-Path -LiteralPath $Review)) {
+        throw "Invalid or existing review directory: $Review"
+    }
+    Write-Host "Fetching pinned upstream into review-only directory: $Review"
+    Invoke-CheckedNative $Git.Source @("clone", "--no-checkout", "https://github.com/ljagiello/ctf-skills", $Review)
+    Invoke-CheckedNative $Git.Source @("-C", $Review, "checkout", "--detach", $Pin)
+    $Actual = & $Git.Source -C $Review rev-parse HEAD
+    if ($LASTEXITCODE -ne 0 -or $Actual.Trim() -ne $Pin) { throw "Upstream pin verification failed; retained $Review for inspection" }
+    foreach ($Asset in @("LICENSE", "scripts/install_ctf_tools.sh", "solve-challenge/SKILL.md", "ctf-writeup/SKILL.md")) {
+        if (-not (Test-Path -LiteralPath (Join-Path $Review $Asset) -PathType Leaf)) { throw "Pinned source missing $Asset" }
+    }
+    Write-Host "Verified $Pin. Review changes against .claude/skills; preserve docs/SKILL-INTEGRATION.md adjustments."
+    Write-Host "No workspace files were replaced by upstream. Review directory retained: $Review"
+}
+Write-Host "Agent assets ready. See docs/BOOTSTRAP.md for runtime setup and verification."

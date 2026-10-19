@@ -10,9 +10,30 @@
 # 반증하는 증거를 함께 Codex에게 넘긴다. 두 의견이 갈리면, 계속하기 전에
 # 그 차이를 먼저 조사한다.
 set -euo pipefail
+[ $# -ge 1 ] || { echo "사용법: bash $0 \"<질문>\"  |  bash $0 --review [초점]" >&2; exit 2; }
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+cd -- "$ROOT"
+if command -v codex >/dev/null 2>&1; then
+  CODEX="$(command -v codex)"
+elif command -v codex.exe >/dev/null 2>&1; then
+  CODEX="$(command -v codex.exe)"
+else
+  echo "Codex CLI not found. Install it and run codex login in this environment." >&2
+  exit 127
+fi
+CODEX_ROOT="$ROOT"
+# Windows Codex launched through WSL expects a Windows --cd path.
+if [[ "$CODEX" == *.exe ]] && command -v wslpath >/dev/null 2>&1; then
+  CODEX_ROOT="$(wslpath -w "$ROOT")"
+fi
 if [ "${1:-}" = "--review" ]; then
   shift
-  exec codex review --uncommitted "${1:-이 변경들에서 정확성 버그와 위험한 가정을 리뷰해줘.}"
+  if [ "$#" -eq 0 ]; then
+    exec "$CODEX" exec --sandbox read-only --cd "$CODEX_ROOT" review --uncommitted
+  fi
+  # Codex rejects --uncommitted together with a positional review prompt.
+  # A focused review therefore uses an explicit, read-only exec task.
+  exec "$CODEX" exec --sandbox read-only --cd "$CODEX_ROOT" -- \
+    "Review all staged, unstaged, and untracked changes in this repository for correctness bugs and risky assumptions. Do not modify files. Review focus: $*"
 fi
-[ $# -ge 1 ] || { echo "사용법: $0 \"<질문>\"  |  $0 --review [초점]" >&2; exit 2; }
-exec codex exec --sandbox read-only "$*"
+exec "$CODEX" exec --sandbox read-only --cd "$CODEX_ROOT" -- "$*"
