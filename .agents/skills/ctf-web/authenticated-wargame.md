@@ -122,6 +122,11 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   로 대상 `.php`를 base64로 받아 디코드 → 비밀/플래그 확인 (old-25).
 - **`.htaccess` 소스노출 업로드**: 업로드 디렉터리가 PHP 실행 off + 본문 `<` 제거로 웹셸이 막히면, `<`가 필요 없는
   `.htaccess`(`AddType text/plain .php` / `php_flag engine off`)를 올려 대상 `.php`를 **소스 그대로** 서빙시킨다(확장자 필터도 우회) (old-28).
+- **`.htaccess`로 `mysqli.default_host` DB 리다이렉트**: 코드가 `mysqli_connect()`를 **인자 없이** 호출하면 INI 기본값
+  (`mysqli.default_host/user/pw`)에 붙는다. 이는 `.htaccess`의 `php_value`로 per-dir 오버라이드 가능(`<` 불필요→본문필터 통과).
+  업로드 디렉터리에 `.htaccess`(`php_value mysqli.default_host "<내 공인 MySQL>"` 등)를 올려 DB를 **공격자 MySQL**로 돌리고,
+  거기에 기대 스키마(예: `chall30.chall30_answer`에 비어있지 않은 행)를 심으면, 고정쿼리가 참이 되어 `include "/flag"`류가 실행된다
+  (old-30). **인프라 게이트**: 챌린지 서버가 공격자 MySQL:3306에 아웃바운드로 닿아야 함(NAT 뒤면 serveo/ngrok TCP 터널 필요).
 - **`from_unixtime()` 숫자 exfil 오라클**: 입력이 `from_unixtime(N)`을 거쳐 **시각**으로 표시되면 N이 `HH:MM:SS`에 그대로
   읽힌다 → `ascii(substr(...))`를 시간기반 블라인드 대신 **한 방 문자읽기**로 (old-02, 09:00:00 KST 오프셋).
 - **에코되는 해시로 해시스킴 역산**: 로그인이 저장 해시를 보여주면, **빈/알려진 비번으로 가입**해 `pw=md5(pw.<salt>)` 같은
@@ -134,6 +139,22 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   브루트 중엔 무관 페이지를 ping해 세션을 살려둔다(대상 페이지는 재생성되니 건드리지 않음) (old-04: `<n><salt>` 평문 제출).
 - **port-app(:PORT) 정찰**: 독립 앱일 수 있다 — 메인 PHPSESSID 없이 접근되거나 자체 세션 발급. 쿠키 **있/없** 둘 다 시도,
   세션바운드 흐름(업로드 디렉터리 등)엔 **per-app 쿠키 jar**. 솔브가 FLAG{}면 전역 제출(사람), exploit 자동이면 그 자리 등록.
+  webhacking.kr :PORT 앱은 메인 PHPSESSID를 **채택**하되 per-app 세션 저장소를 따로 쓰고, 플래그는 대부분 **FLAG{} 콘텐츠**
+  (사람이 /auth.php 제출)로 노출된다(자동솔브 아님).
+- **MSYS(Git Bash) curl `-F @file` 실패**: 멀티파트 업로드 시 `read error getting mime data`로 0바이트 전송된다. →
+  **raw 멀티파트 바디를 수동 생성**(CRLF 줄끝)해 `--data-binary @body -H "Content-Type: multipart/form-data; boundary=..."`
+  로 보낸다. 모든 업로드 챌린지(old-30/43/48)에서 필수.
+- **5글자 cmd 인젝션에서 echo 따옴표 짝맞추기**: `system("echo 'hello! {$id}'")`에 `$id`가 5자 제한이면, 뒤쪽 소스의
+  닫는 `'`를 **우리 `'`와 짝지어** 삼킨다 → `';ls'`(5자) → `echo 'hello! ';ls''`(`ls`+빈문자열). ls로 `flag_<hash>` 노출,
+  그 **플래그 파일이 앱 루트에서 웹서빙**되면 바로 GET (old-44).
+- **proxy형 SSRF + 요청라인 RAW 삽입 + CRLF 세션주입**: `proxy.php?page=`가 `page`를 `GET <page> HTTP/1.1`에 그대로 넣고
+  **서버 자신(172.17.0.x)에서** 재요청하면: (1) 먼저 Basic-Auth SQLi 등으로 내 세션을 admin으로 만들고, (2) `page`에 CRLF로
+  `Cookie: PHPSESSID=<admin sid>` 헤더를 주입해 **172.17 출신 + admin 세션** 단일 요청을 성립시킨다. 템플릿 꼬리 ` HTTP/1.1`은
+  더미 헤더(`X:`)로 흡수. `page=/admin/%20HTTP/1.1%0d%0aCookie:%20PHPSESSID=<sid>%0d%0aX:` (old-52).
+- **socket.io(2.x)를 curl로**: engine.io v3 폴링(`EIO=3&transport=polling`). 핸드셰이크 GET이 `96:0{sid}2:40`처럼 **connect를
+  이미 포함**해 반환 → 여기서 바로 **첫 long-poll GET을 하면 sid가 죽는다**("Session ID unknown"). 핸드셰이크 직후 곧장
+  `POST <len>:42["cmd","<payload>"]`(이벤트 emit) 후 GET 폴링. 클라가 username을 하드코딩해도 raw emit으로 임의 값
+  (`admin:flag`) 전송 → 서버가 admin에게만 주는 플래그 획득 (old-58).
 - **`PHPSESSID` is_numeric 게이트(차단 패턴)**: PHP가 세션id와 `$_COOKIE['PHPSESSID']`를 같은(첫) 쿠키값에 묶어,
   `is_numeric()`에 숫자를 보이며 비숫자 로그인 세션을 유지할 수 없다 → 인증된 숫자 세션(strict_mode off 고정, 비번
   로그인 필요)이 있어야 풀림 → 쿠키-only로는 차단 (old-60).
