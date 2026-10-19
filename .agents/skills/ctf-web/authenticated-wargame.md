@@ -118,6 +118,25 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   파이썬으로 재구현: 문자열배열을 래퍼 IIFE `(arr,0xNN)`의 **오프셋만큼 좌회전** → 각 문자열 `atob → %xx 퍼센트인코딩 →
   decodeURIComponent(UTF-8) → RC4(per-call key)`. 디코드된 문자열에서 승리조건을 직접 읽는다(예: `location.hash==...` →
   `?<pass>=1` 직접 GET) (old-34).
+- **php://filter LFI 소스읽기**: `include($_GET['file'].".php")`류는 `?file=php://filter/convert.base64-encode/resource=flag`
+  로 대상 `.php`를 base64로 받아 디코드 → 비밀/플래그 확인 (old-25).
+- **`.htaccess` 소스노출 업로드**: 업로드 디렉터리가 PHP 실행 off + 본문 `<` 제거로 웹셸이 막히면, `<`가 필요 없는
+  `.htaccess`(`AddType text/plain .php` / `php_flag engine off`)를 올려 대상 `.php`를 **소스 그대로** 서빙시킨다(확장자 필터도 우회) (old-28).
+- **`from_unixtime()` 숫자 exfil 오라클**: 입력이 `from_unixtime(N)`을 거쳐 **시각**으로 표시되면 N이 `HH:MM:SS`에 그대로
+  읽힌다 → `ascii(substr(...))`를 시간기반 블라인드 대신 **한 방 문자읽기**로 (old-02, 09:00:00 KST 오프셋).
+- **에코되는 해시로 해시스킴 역산**: 로그인이 저장 해시를 보여주면, **빈/알려진 비번으로 가입**해 `pw=md5(pw.<salt>)` 같은
+  스킴·salt를 먼저 밝힌 뒤 admin 해시를 크랙한다 (old-22: 가입으로 `md5(pw.<salt>)` 꼴 확인 → admin md5 역크랙).
+- **문자리터럴·`=`·`<>`·WHERE·LIMIT 전부 차단 SQLi**: 동치는 `if(strcmp(a,b),2,1)`, 바이트비교는 `ord(substr(..))`+
+  `least`/`greatest`, 스키마는 `min/max(if(strcmp(table_schema,database()),null,table_name))`로 WHERE 없이 열거.
+  SQL **에러로 결과테이블 유무** 자체가 추가 오라클 (old-13).
+- **`?view-source` 핸들러는 보통 세션 재생성 전 `exit`** → 소스 봐도 per-load 비밀 유효(하이픈/언더바 GET 키 주의).
+  솔브가 세션의 **pre-hash 평문**과 비교하면, 표시된 반복해시(`sha1^500` 등)를 크랙하되 **평문을 제출**. 긴 오프라인
+  브루트 중엔 무관 페이지를 ping해 세션을 살려둔다(대상 페이지는 재생성되니 건드리지 않음) (old-04: `<n><salt>` 평문 제출).
+- **port-app(:PORT) 정찰**: 독립 앱일 수 있다 — 메인 PHPSESSID 없이 접근되거나 자체 세션 발급. 쿠키 **있/없** 둘 다 시도,
+  세션바운드 흐름(업로드 디렉터리 등)엔 **per-app 쿠키 jar**. 솔브가 FLAG{}면 전역 제출(사람), exploit 자동이면 그 자리 등록.
+- **`PHPSESSID` is_numeric 게이트(차단 패턴)**: PHP가 세션id와 `$_COOKIE['PHPSESSID']`를 같은(첫) 쿠키값에 묶어,
+  `is_numeric()`에 숫자를 보이며 비숫자 로그인 세션을 유지할 수 없다 → 인증된 숫자 세션(strict_mode off 고정, 비번
+  로그인 필요)이 있어야 풀림 → 쿠키-only로는 차단 (old-60).
 
 ## 4. 병렬 서브에이전트
 - **순수 계산** 위임: 필터 역산(문자열 변환식의 역상 탐색 — old-24 IP 필터는 길이 20 페이로드를 서브에이전트가 전수탐색),
