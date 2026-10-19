@@ -99,6 +99,8 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
 - **인프라 게이트 SSRF/콜백(풀이 불가 판정)**: `fsockopen($host,port)` 성공이 솔브 조건이면 **공인 TCP 리스너**가
   필요하다. NAT 뒤·포트포워드 없음이면 불가(localhost.run류는 80/443만). 공용 리스너를 확보할 수 있을 때만 시도,
   아니면 NOTES에 "인프라 게이트"로 적고 넘어간다 (old-31, old-37).
+- **이메일 헤더 인젝션**: subject/수신자 등 사용자 입력이 메일에 그대로 들어가면 `\r\n`으로 헤더 추가(`Bcc:`) 또는
+  빈 줄(`\r\n\r\n`) 후 본문 주입 → `subject=hello%0d%0aBcc:me@x%0d%0a%0d%0abody` (old-47).
 
 ## 4. 병렬 서브에이전트
 - **순수 계산** 위임: 필터 역산(문자열 변환식의 역상 탐색 — old-24 IP 필터는 길이 20 페이로드를 서브에이전트가 전수탐색),
