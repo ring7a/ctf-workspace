@@ -39,6 +39,9 @@ Claude Code와 Codex의 CTF 풀이 지시·도구·증거 기록을 함께 관�
 - `tools/` — `new-challenge.sh`, `codex-crosscheck.sh`, `wsl/`, 벤더된 스크립트.
 - `tools/volatility/` — 메모리 포렌식 하네스: `vol.ps1`/`vol.sh` 래퍼, 자체 생성 리눅스 ISF,
   커널 키링 플러그인, BTF→ISF 생성·LUKS2 복호 스크립트. 운영 규칙은 "메모리 이미지는 Volatility 먼저".
+- `tools/autopsy/` — 디스크 포렌식 하네스: Autopsy MCP 연결·질의 헬퍼. 운영 규칙은 "디스크 이미지는 Autopsy 먼저".
+- `tools/agent-browser/` — 라이브 웹 상호작용 하네스: `agent-browser`(Vercel Labs CDP CLI) 래퍼·연결 확인
+  헬퍼. 운영 규칙은 "라이브 웹 = 2트랙"([아래](#라이브-웹-상호작용-2트랙)).
 - `tools/wsl/` — 전용 CTF Linux: `setup-ubuntu-ctf.ps1`,
   `provision-ubuntu-ctf.sh`, `ctf-venv-requirements.txt` (동결 툴체인).
 - `docs/BOOTSTRAP.md` — 개념 + 새 환경에서 단계별 재구축.
@@ -60,6 +63,34 @@ Claude Code와 Codex의 CTF 풀이 지시·도구·증거 기록을 함께 관�
    챌린지 NOTES.md 에 기록한다.
 4. `verifier` 가 플래그를 검사하고, 사람이 제출한다. 막혔다면
    `tools/codex-crosscheck.sh` 로 Codex의 독립 의견을 받는다.
+
+## 라이브 웹 상호작용 (2트랙)
+
+웹 챌린지에서 `ctf-web` 스킬(SQLi/XSS/SSTI/SSRF/JWT…)이 기법·페이로드 베이스이고, 실제 트리거·검증은
+상황에 따라 두 트랙으로 나눕니다.
+
+1. **실제 로그인 Chrome 대화형 조작** (admin-bot 트리거, 수동 XSS/DOM 확인, 세션·쿠키 그대로)
+   → `claude-in-chrome` MCP(`mcp__claude-in-chrome__*`). 즉시 동작.
+2. **반복 자동화·스냅샷 탐색·HAR→API 클라이언트·녹화·Codex 공유**
+   → `agent-browser`(Vercel Labs 네이티브 CDP CLI, 접근성 트리 `@eN` ref로 토큰 효율적).
+3. **둘 다 과하거나 막힘** → `curl`/`httpx`/`requests`(`ctf-web/python-requests.md`,
+   `ctf-web/scripts/async_fuzz.py`) 수동.
+
+agent-browser 셋업·사용 (이 호스트는 헤드리스가 막혀 **`--headed` 필수**):
+
+```bash
+npm i -g agent-browser && agent-browser install         # 바이너리 + Chrome-for-Testing (최초 1회)
+bash tools/agent-browser/agent-browser.sh smoke-headed  # 라이브 라운드트립 확인
+
+export AGENT_BROWSER_SESSION="$(agent-browser session id --scope worktree --prefix ctf)"  # 세션 격리
+agent-browser open <url> --headed     # 페이지 열기 (--headed 필수)
+agent-browser snapshot -i             # 상호작용 요소 → @eN ref
+agent-browser click @e3               # ref로 조작 (fill/type/select/upload …)
+agent-browser close --all             # 끝나면 세션 정리
+```
+
+절차·커맨드 매핑·함정은 [ctf-web/agent-browser.md](.claude/skills/ctf-web/agent-browser.md),
+도구 설명은 [tools/agent-browser/README.md](tools/agent-browser/README.md)에 있습니다.
 
 ## 다른 머신 / 다른 에이전트로 이식
 스킬·역할 파일은 저장소와 함께 이동하고, CLI 인증·모델 이용 권한·WSL 등록·대회
