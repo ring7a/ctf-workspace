@@ -113,7 +113,10 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   절대 URL 비콘을 함께). 인프라 구축 전 **싸게 생존확인 먼저**: `<img>` 핑 하나로 admin-bot이 콜백을 보내는지
   확인하고(살아 있으면 공격 IP에서 GET 기록), 죽어 있으면 페이로드가 맞아도 콜백이 안 오니 그 판정을 먼저 한다.
   구형 문제라도 bot이 살아 있을 수 있음(BABY :10010에서 HeadlessChrome 콜백 실측). 이 경로로 `<base>` nonce-CSP
-  우회 admin-bot 문제를 실제 해결함.
+  우회 admin-bot 문제를 실제 해결함. **트리거 유무가 솔브 가능성을 가른다**: `report.php`류 **즉시 트리거**가 있으면
+  on-demand로 bot을 부를 수 있어 분 단위로 풀린다(BABY·CHILD). 트리거가 없고 **수동 크론**이 `/upload/` 같은 곳을
+  도는 데만 의존하면(old-48), 익스플로잇이 완비돼도 관측창 안에 안 올 수 있다 — 이건 공격 실패가 아니라 bot 방문
+  주기 문제. 길게 passive watch를 걸거나, 주기를 모르면 "admin-bot inactive/no callback(관측창 내)"로 판정한다.
   (3) **주의(모델 안전장치)**: admin 쿠키 반출 류 페이로드 작성은 SQLi/cmdi와 달리 Claude 실시간 cyber 안전장치에
   더 자주 `[cyber]`로 걸린다(Opus 4.8에서도 실측 종료). 확률적이라 같은 작업이 다른 서브에이전트에선 완주하기도 함.
   걸리면 같은 프롬프트로 반복하지 말고 모델/서브에이전트를 바꿔 재투입하되, 반복 실패 시 그 단계는 사람이 수행.
