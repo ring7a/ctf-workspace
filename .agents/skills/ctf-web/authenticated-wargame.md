@@ -231,15 +231,30 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   (old-31/37/38 동류). (child toctou)
 - **6자 cmd-injection(이중따옴표 echo) = 백틱 치환, 단 읽기엔 부족할 수 있음**: `system("...echo \"hello! {$id}\"")`에서 `$id`가
   6바이트면 **따옴표 깨기 불필요** — 백틱 `` `ls /` ``(6B)이 echo 문자열 안에서 치환 실행된다(따옴표 균형 유지, `$()`도 가능).
-  단 `/bin/sh`=dash라 `$(<file)` 없음 → 최소 파일읽기는 `` `nl /a*` ``=8B. 백틱 오버헤드 2B라 **실효 4자**뿐. `` `nl *` ``(6B)는
-  cwd가 `/`일 때만 플래그를 읽음. 긴 파일명+6B+‘/’나 공백을 스테이징 파일에 못 쓰는(dash echo 이스케이프 없음, `";pwd>"`는
-  미닫힘따옴표 에러, 백틱 `pwd>f`=7B) 조합이면 콘텐츠 읽기가 막힐 수 있다 — 인프라가 아닌 **순수 퍼즐 블록**으로 판정. (old-44 RevengE)
+  단 `/bin/sh`=dash. 백틱 오버헤드 2B라 **실효 4자**뿐(`` `nl *` ``=6B=cwd 읽기, `` `sh f` ``/`` `. f` ``=스테이징 파일 실행).
+  **읽기 불가 증명(바이트 산수)**: 루트파일 읽기 최소형은 `nl /X`=reader2+space1+`/`1+name≥1 = **5자 = 백틱 7B > 6** → 이름이 1자여도
+  루트는 못 읽는다. 6B에 맞는 읽기는 cwd뿐인데, 플래그는 `/`에 있고 cwd로 옮기는 `mv/cp/ln /a* .`는 전부 ≥8B.
+  **정정(이전 메모 오류)**: dash builtin echo는 **이스케이프를 해석한다**(`\0057`→`/`, `\t`→TAB, `\n`→개행; 실측). 임의 바이트를
+  파일에 쓸 수 있으나 — echo 경로는 항상 리터럴 접두사 `hello! `가 붙고 내용은 ≤2자(truncate `C">f"`)/≤1자(append `C">>f"`),
+  접두사 없는 백틱-리다이렉트(`` `id>f` ``)는 **고정 명령 출력만** 낸다(임의문자 불가, echo/printf는 4자 백틱에 안 들어감).
+  따라서 깨끗한 리더 스크립트를 스테이징할 수 없다 → 인프라 아님, **진짜 셸골프 벽**. (old-44 RevengE)
+  cmd-injection 트레일링 `"` 중화: `";CMD;"`(→`;""` 짝맞춤) 또는 `";CMD #`(주석). 둘 다 실효 CMD 2자.
 
 - **Google Form 플래그/정답 추출**: 폼 HTML의 `FB_PUBLIC_LOAD_DATA_`(또는 `..._initialData`) 스크립트 변수에 폼 전체 정의가
   들어있다 — 퀴즈 정답·피드백·숨은 값 포함. `curl <forms.gle 링크> | grep -oE 'FLAG\{[^}]*\}'`로 바로 나오기도 한다 (g00gle1).
 - **Google Sheet 무권한 읽기(request-access 없이)**: `/export?format=csv`는 로그인 게이트지만 **`/gviz/tq?tqx=out:csv`**
-  (Visualization API)는 접근요청 없이 셀값을 반환한다. 미끼만 보이면 진짜 값은 **셀 노트/숨은 시트(특정 gid)** 에 있을 수
-  있고 그건 Sheets API 키나 로그인-인접 방법이 필요 (g00gle2: gviz는 decoy만).
+  (Visualization API)는 접근요청 없이 **셀값만** 반환한다(노트·수식·숨은시트 X; gid 무시하고 기본시트만). gviz가 미끼만 내면
+  **익명 `/edit` 페이지 HTML의 부트스트랩(`var bootstrapData = {...}`)** 을 받아라(로그인 아님, 공개 링크공유면 익명 200).
+  부트스트랩엔 셀 **수식·링크칩·IMPORTRANGE 소스 id**가 전부 들어있다. 함정: 미끼 셀이 `=REPLACE(IMPORTRANGE("<비공개
+  시트 URL>","A1"),6,19,REPT("?",13))` 식이면 — 진짜 플래그는 **IMPORTRANGE 소스 시트 A1**에 있고, Google이 수식을 **서버에서
+  계산**해 **마스킹된 최종값만** 공개 모델에 넣는다(원본 import는 부트스트랩/어느 청크에도 없음). 소스 시트가 로그인게이트
+  (`/edit`·`/gviz`·`/export` 전부 302→accounts / 401)면 그 마스킹 글자는 **로그인·접근요청 없이는 복구 불가**. 부트스트랩의
+  `AIzaSy...` 1st-party 키는 프로젝트-스코프(Sheets API 비활성)라 v4 `includeGridData`(노트) 호출에 못 쓴다. (g00gle2).
+- **빈응답/죽은 엔드포인트 판정(오라클 없음)**: 모든 입력(정상쿼리 바이트복제·쓰레기·빈값·무파라미터·introspection·POST
+  form/json·`application/graphql`·`param[]=`배열 type-juggle·OPTIONS)에 **동일 200 / Content-Length:0 / text-html / 평탄 타이밍**이고
+  **그 페이지 자신의 정상쿼리에도 CL:0**(=모든 사용자에게 보드가 빈칸)이면, 백엔드가 아무에게도 데이터를 안 주는 것(빈 DB·깨진
+  리졸버·세션무관 서버상태 게이트). 불린/시간/에러 채널이 전무 → 스코프 내 **오라클 없음=블록**, 인스턴스가 실제로 행을 서빙할
+  때 재점검. 게이트↔완전죽음 구분: `param[]=`배열로 PHP 타입에러 유발 시도 — 그래도 반사 0이면 출력 전에 die/빈DB. (NotSQL :10012).
 
 - **parse_url 화이트리스트는 스킴 불문 → `data://` 플레인 + 퍼센트인코딩으로 문자 블랙리스트 전면 우회(include RCE)**:
   `include($_GET['url'].".txt")`에 `filter_var URL`+`host===X&&port===N`+리터럴 서브스트링+문자블랙리스트(`( ) $ ' " _ ? @ # …`)가
