@@ -98,7 +98,9 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   `/**/` 제거 시 실제 공백/괄호로 토큰 분리. information_schema로 테이블/컬럼 열거 (old-29).
 - **인프라 게이트 SSRF/콜백(풀이 불가 판정)**: `fsockopen($host,port)` 성공이 솔브 조건이면 **공인 TCP 리스너**가
   필요하다. NAT 뒤·포트포워드 없음이면 불가(localhost.run류는 80/443만). 공용 리스너를 확보할 수 있을 때만 시도,
-  아니면 NOTES에 "인프라 게이트"로 적고 넘어간다 (old-31, old-37).
+  아니면 NOTES에 "인프라 게이트"로 적고 넘어간다 (old-31, old-37). **로그/IP 게이트도 동종**: 로그인젝션으로
+  `<내IP>:admin` 라인을 깨끗이 만들어도, 솔브 체크가 쓰는 `REMOTE_ADDR`이 **프록시 내부 주소**라 외부에서 관측·주입
+  불가면 풀 수 없다. XFF/X-Real-IP 등 포워딩 헤더가 무시되는지 확인하고, 그렇다면 인프라게이트로 판정 (old-38).
 - **이메일 헤더 인젝션**: subject/수신자 등 사용자 입력이 메일에 그대로 들어가면 `\r\n`으로 헤더 추가(`Bcc:`) 또는
   빈 줄(`\r\n\r\n`) 후 본문 주입 → `subject=hello%0d%0aBcc:me@x%0d%0a%0d%0abody` (old-47).
 - **INSERT 자기컬럼 참조(`select` 불필요)**: 필터가 `select`를 막아도 비밀이 **내가 삽입하는 행**에 보간되면
@@ -109,6 +111,13 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   길이는 `PREFIX{<밑줄 k개>}`로 측정 (old-56).
 - **`ascii`/`like` 차단 시 바이트 비교**: `ascii`/`substr`/`like`가 막혀도 `mid`/`substring`/`binary`/`>`가 살면
   `binary(mid(col,N,1))>0xHH`로 바이트 이진탐색 (old-40).
+- **퍼즐/클라 게이트 + 2차 SQLi**: 1단계가 클라에서 계산한 "answer"를 통과시키는 구조면, 그 answer가 **후속 POST에서
+  재검증 없이** 표시 쿼리 `WHERE`에 들어가는 경우가 많다 → 거기에 `answer=' or '1'='1`로 주입해 게이트된 admin 행을
+  노출·솔브 (old-03). 1단계 통과는 퍼즐을 코드로 풀어 보낸다(노노그램 등).
+- **obfuscator.io 난독 JS 정적 디코드**: 사이트의 `b(idx,key)` 디코더를 **실행하지 말 것**(안티탬퍼 무한루프 내장).
+  파이썬으로 재구현: 문자열배열을 래퍼 IIFE `(arr,0xNN)`의 **오프셋만큼 좌회전** → 각 문자열 `atob → %xx 퍼센트인코딩 →
+  decodeURIComponent(UTF-8) → RC4(per-call key)`. 디코드된 문자열에서 승리조건을 직접 읽는다(예: `location.hash==...` →
+  `?<pass>=1` 직접 GET) (old-34).
 
 ## 4. 병렬 서브에이전트
 - **순수 계산** 위임: 필터 역산(문자열 변환식의 역상 탐색 — old-24 IP 필터는 길이 20 페이로드를 서브에이전트가 전수탐색),
