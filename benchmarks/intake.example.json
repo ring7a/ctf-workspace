@@ -1,0 +1,8 @@
+{
+  "ai_allowed": null,
+  "local_only": null,
+  "human_submission_only": true,
+  "publish_synthetic_results": null,
+  "flag_regex": "BENCH\\{[0-9a-f]{32}\\}",
+  "user_confirmation": null
+}
