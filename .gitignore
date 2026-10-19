@@ -15,10 +15,36 @@ events/*
 !events/_TEMPLATE/
 !events/_TEMPLATE/**
 !events/README.md
-# Generated slide deck — build locally via tools/build-deck.js, do not commit
+# Instructor presentation assets are kept outside the student repository.
 docs/*.pptx
+tools/build-deck.js
+tools/build-harness-deck.js
+tools/build-workspace-deck.js
+tools/build-student-deck.js
 # MS Office lock/temp files
 ~$*
 # Node build deps for the deck generator
 node_modules/
 package-lock.json
+# Local presentation render/check intermediates
+docs/student-deck-build/
+# Legacy local archive name; student distribution uses Git only.
+docs/CTF-Student-Pack.zip
+# Local benchmark raw runs and generated answer keys do not belong in source.
+benchmarks/runs/
+benchmarks/intake.local.json
+dist/student-repo/
+dist/benchmark-review-tools/
+# Integration runtimes, downloads, model traces, and machine-specific MCP settings.
+.integrations/
+.mcp.json
+.codex/config.toml
+.mcp.json.pre-integrations.backup
+.codex/config.toml.pre-integrations.backup
+.mcp.json.integration-tmp
+.codex/config.toml.integration-tmp
+dist/student-repo-integrations/
+dist/student-repo-rea/
+# Portable Volatility binary is downloaded per machine; symbols/plugins/scripts are tracked.
+tools/volatility/bin/
+.venv-vol/
