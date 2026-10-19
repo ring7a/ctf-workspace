@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "reviewed_date": "2026-10-14",
+  "installation_status_source": ".integrations/rea/install-state.json and its scoped doctor report; absence means not installed",
+  "rea": {
+    "repository": "https://github.com/morluto/rea",
+    "version": "6.4.0",
+    "source_commit": "a56f7bb668ab23fec8d33f7af353ac7ed2fe1895",
+    "node": "24.15.0",
+    "jdk": "Temurin 21.0.11+10",
+    "ghidra": "12.1.4",
+    "integrity": "Official Node/JDK/Ghidra SHA-256 is verified; npm SRI/gitHead is recorded after installation."
+  },
+  "licenses": "REA identifies its own code as MIT. Third-party engine/runtime notices remain separate. No Hopper/IDA/JEB entitlement is installed."
+}
