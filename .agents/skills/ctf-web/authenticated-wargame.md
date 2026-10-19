@@ -84,6 +84,9 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   하나 덜 닫아** 균형을 맞춘다 (old-35).
 - **vi 스왑파일 소스복구**: "편집 중 크래시/정전으로 소스가 사라졌다"류 힌트 → `.<name>.swp`·`.swo`·`<name>~`에 접근해
   원본을 복구한다(바이너리라 `strings`/printable-run 추출). 복구한 `FLAG{}`는 사람이 제출 (old-36).
+- **클라이언트 전용 다운로드 차단 우회**: 막힌 다운로드가 `javascript:alert('Access Denied')` 같은 **클라 측**이면
+  서버의 다운로드 파라미터를 직접 호출한다 — 보통 `?down=base64(파일명)`류. `?down=ZmxhZy5kb2N4`(="flag.docx").
+  받은 `.docx`/`.xlsx`/`.pptx`는 zip이므로 `word/document.xml` 등에서 텍스트/플래그 추출 (old-42).
 
 ## 4. 병렬 서브에이전트
 - **순수 계산** 위임: 필터 역산(문자열 변환식의 역상 탐색 — old-24 IP 필터는 길이 20 페이로드를 서브에이전트가 전수탐색),
