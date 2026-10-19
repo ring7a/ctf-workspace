@@ -285,6 +285,15 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   (여러 번 평가되는 것으로 보임), 1행 `ORDER BY(@x:=…)`(최적화로 제거됨)는 모두 믿을 수 없다. 카운터 하나에 매달리지 말고 실행 횟수가
   정해진 구조나 연결 수준 부작용(get_lock 등)을 먼저 검증할 것.
 
+- **컬럼명을 모를 때 `PROCEDURE ANALYSE()`로 노출(MySQL ≤5.7)**: `select`/`union`/서브쿼리가 막혀 information_schema를
+  못 읽어도, 숫자형 주입점 뒤에 `PROCEDURE ANALYSE()`를 붙이면 결과가 필드 분석행으로 바뀌어 `db.table.column` 형태의
+  **완전한 컬럼명**이 화면 출력 칸에 찍힌다. 페이지가 한 행만 보여주면 `LIMIT n,1 PROCEDURE ANALYSE()`로 n을 올려가며
+  컬럼을 하나씩 넘긴다. (MySQL 8.0에서 제거됨 — 버전부터 확인)
+- **`substr`/`mid` 없이 바이트 추출 + 행 고정**: `ord(right(left(col,N),1))>X`로 N번째 바이트를 이진탐색한다.
+  여러 행이 섞이는 테이블이면 `col like 0x<hex접두사>25` 조건을 `and`로 묶어 목표 행만 남긴다(따옴표 없이 hex로 문자열 표현).
+  길이는 `length(col)>m`으로 먼저 구한다. 마지막에 `binary col = 0x<추출값 hex>` 한 번으로 **대소문자까지 정확히 검증**한다
+  (`like`는 대소문자를 구분하지 않으니 검증용으로 쓰지 말 것).
+
 ## 4. 병렬 서브에이전트
 - **순수 계산** 위임: 필터 역산(문자열 변환식의 역상 탐색 — old-24 IP 필터는 길이 20 페이로드를 서브에이전트가 전수탐색),
   크립토, 해시/인코딩 브루트포스, 디코딩.
