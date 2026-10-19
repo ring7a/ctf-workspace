@@ -2,7 +2,6 @@
 name: ctf-writeup
 description: Generates a single standardized submission-style CTF writeup for competition handoff and organizer review. Use after solving a CTF challenge to document the solution steps, tools used, and lessons learned in a structured format.
 license: MIT
-compatibility: Requires filesystem-based agent (Claude Code or similar) with bash and Python 3.
 allowed-tools: Bash Read Write Edit Glob Grep Task WebFetch WebSearch
 metadata:
   user-invocable: "true"
@@ -10,6 +9,10 @@ metadata:
 ---
 
 # CTF Write-up Generator
+
+> Workspace integration: read [the local execution and evidence rules](../../../docs/SKILL-INTEGRATION.md) before using these examples.
+
+Tool requirements: Requires filesystem-based agent (Claude Code, Codex or similar) with bash and Python 3.
 
 Generate a standardized submission-style CTF writeup for a solved challenge.
 
@@ -39,7 +42,7 @@ grep -rniE '(flag|ctf|eno|htb|pico)\{' . 2>/dev/null
 
 ### Step 2: Generate Write-up
 
-Write the writeup file as `writeup.md` (or `writeup-<challenge-name>.md`) using the submission template below.
+Write the private writeup as `events/<event>/challenges/<challenge>/writeup.md` using the template below. Keep scripts in that challenge's `work/` directory. Include input hashes, exact invocation, tool/model versions, evidence paths, and the verifier result. Public classroom or presentation copies must follow the event redistribution rules and omit real flags, credentials, and private infrastructure.
 
 ---
 
@@ -99,7 +102,7 @@ Guidance:
 - Avoid long background sections
 - Avoid dead ends unless they explain a key pivot
 - Avoid multiple alternative solves; pick one clean path
-- Redact the flag only if the user explicitly asks for redaction
+- Keep the real flag only in the private challenge record; redact it from public teaching/share copies
 
 ---
 

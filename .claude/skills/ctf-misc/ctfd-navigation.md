@@ -2,6 +2,10 @@
 
 Programmatic interaction with CTFd-based CTF platforms via REST API. Eliminates browser dependency during competitions.
 
+Workspace integration: complete the event intake and use these examples only for
+authorized platform reading and artifact download. Flag submission and paid hint
+unlocking are human actions. Record new artifact hosts before contacting them.
+
 ## Table of Contents
 
 - [Detect CTFd](#detect-ctfd)
@@ -9,12 +13,12 @@ Programmatic interaction with CTFd-based CTF platforms via REST API. Eliminates 
 - [List Challenges](#list-challenges)
 - [Challenge Details](#challenge-details)
 - [Download Challenge Files](#download-challenge-files)
-- [Submit Flags](#submit-flags)
+- [Human Flag Handoff](#human-flag-handoff)
 - [Scoreboard](#scoreboard)
 - [Hints and Unlocks](#hints-and-unlocks)
 - [Notifications](#notifications)
 - [User and Team Info](#user-and-team-info)
-- [Full Competition Workflow](#full-competition-workflow)
+- [Read-only Platform Workflow](#read-only-platform-workflow)
 - [Python CTFd Client](#python-ctfd-client)
 - [Troubleshooting](#troubleshooting)
 
@@ -180,26 +184,13 @@ done
 
 ---
 
-## Submit Flags
+## Human Flag Handoff
 
-```bash
-# Submit a flag
-curl -s -X POST -H "Authorization: Token $CTF_TOKEN" \
-  -H "Content-Type: application/json" \
-  "$CTF_URL/api/v1/challenges/attempt" \
-  -d "{\"challenge_id\": $CHALL_ID, \"submission\": \"flag{example}\"}" | jq .
-```
-
-**Response statuses:**
-| Status | Meaning |
-|--------|---------|
-| `correct` | Flag accepted |
-| `incorrect` | Wrong flag |
-| `already_solved` | Previously solved by you/team |
-| `ratelimited` | Too many attempts (default: 10/min) |
-| `paused` | CTF is paused |
-
-**Key insight:** Rate limit is 10 incorrect submissions per minute per user. Space out brute-force attempts or you get locked out temporarily.
+The workspace never submits flags automatically. Save the candidate and its
+evidence in the private challenge directory, have the verifier reproduce the
+solve and check the event format, then hand the result to the human operator.
+Use the event's actual submission and penalty rules; do not assume a platform
+default. API examples below are for reading challenge information.
 
 ---
 
@@ -232,11 +223,7 @@ curl -s -H "Authorization: Token $CTF_TOKEN" "$CTF_URL/api/v1/challenges/$CHALL_
 # Get hint content (if free or already unlocked)
 curl -s -H "Authorization: Token $CTF_TOKEN" "$CTF_URL/api/v1/hints/$HINT_ID" | jq .
 
-# Unlock a paid hint (costs points)
-curl -s -X POST -H "Authorization: Token $CTF_TOKEN" \
-  -H "Content-Type: application/json" \
-  "$CTF_URL/api/v1/unlocks" \
-  -d "{\"target\": $HINT_ID, \"type\": \"hints\"}" | jq .
+# A human decides whether to unlock a paid hint through the platform UI.
 ```
 
 ---
@@ -281,7 +268,7 @@ curl -s -H "Authorization: Token $CTF_TOKEN" "$CTF_URL/api/v1/teams/$TEAM_ID/sol
 
 ---
 
-## Full Competition Workflow
+## Read-only Platform Workflow
 
 End-to-end CTFd interaction from the terminal:
 
@@ -317,20 +304,14 @@ curl -s -H "Authorization: Token $CTF_TOKEN" "$CTF_URL/api/v1/challenges/$CID" |
   done
 echo "Files downloaded to chall_$CID/"
 
-# 5. Submit flag
-read -p "Flag: " FLAG
-curl -s -X POST -H "Authorization: Token $CTF_TOKEN" \
-  -H "Content-Type: application/json" \
-  "$CTF_URL/api/v1/challenges/attempt" \
-  -d "{\"challenge_id\": $CID, \"submission\": \"$FLAG\"}" | \
-  jq -r '.data | "\(.status): \(.message)"'
+# 5. Hand the verified candidate to the human operator for submission.
 ```
 
 ---
 
 ## Python CTFd Client
 
-Reusable class for scripted interaction:
+Reusable class for reading challenge information. Use `download_files` only with a private challenge `untrusted/` destination. Hint unlocks consume points and remain a human decision.
 
 ```python
 import requests
@@ -349,11 +330,6 @@ class CTFdClient:
 
     def _get(self, path, **kwargs):
         r = self.s.get(f'{self.url}/api/v1{path}', **kwargs)
-        r.raise_for_status()
-        return r.json()
-
-    def _post(self, path, json=None):
-        r = self.s.post(f'{self.url}/api/v1{path}', json=json)
         r.raise_for_status()
         return r.json()
 
@@ -390,14 +366,7 @@ class CTFdClient:
             paths.append(str(out))
         return paths
 
-    # --- Flag Submission ---
-
-    def submit(self, cid, flag):
-        """Submit a flag. Returns (status, message)."""
-        resp = self._post('/challenges/attempt',
-                          json={'challenge_id': cid, 'submission': flag})
-        d = resp['data']
-        return d['status'], d['message']
+    # Flag submission is intentionally absent: a human submits.
 
     # --- Scoreboard ---
 
@@ -421,9 +390,7 @@ class CTFdClient:
         """Get hint content (if unlocked or free)."""
         return self._get(f'/hints/{hint_id}')['data']
 
-    def unlock_hint(self, hint_id):
-        """Unlock a hint (costs points)."""
-        return self._post('/unlocks', json={'target': hint_id, 'type': 'hints'})
+    # Paid hint unlocks are intentionally absent; the human decides.
 
     # --- Notifications ---
 
@@ -444,10 +411,9 @@ if __name__ == '__main__':
     for ch in c.unsolved():
         print(f"  [{ch['id']}] {ch['category']}/{ch['name']} ({ch['value']}pts, {ch['solves']} solves)")
 
-    # Download and submit workflow
-    # files = c.download_files(1, dest='chall_1')
-    # status, msg = c.submit(1, 'flag{...}')
-    # print(f"{status}: {msg}")
+    # Download into the private challenge untrusted/ directory.
+    # files = c.download_files(1, dest='events/EVENT/challenges/NAME/untrusted')
+    # After independent verification, a human submits through the platform UI.
 ```
 
 ---
@@ -459,7 +425,7 @@ if __name__ == '__main__':
 | 401 Unauthorized | Token expired or invalid | Re-generate token via web UI or session login |
 | 403 on file download | File token expired | Re-fetch challenge details to get fresh file URLs |
 | 403 on challenges | CTF not started or email unverified | Check `/api/v1/users/me` for `verified` field |
-| 429 Rate Limited | Too many wrong flag submissions | Wait 60 seconds; default is 10 incorrect/min |
+| 429 Rate Limited | Too many wrong flag submissions | Follow the event rules and Retry-After; a human handles submission |
 | Empty challenge list | CTF hasn't started | Check CTF start time in notifications or config |
 | `nonce` missing | Login page changed or anti-bot | Try API token auth instead of session login |
 | Connection info not in API | Some CTFs use dynamic instances | Check for challenge-specific instance API or Docker endpoints |

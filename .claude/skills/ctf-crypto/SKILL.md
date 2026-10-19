@@ -2,13 +2,16 @@
 name: ctf-crypto
 description: Provides cryptography attack techniques for CTF challenges. Use when attacking encryption, hashing, signatures, ZKP, PRNG, or mathematical crypto problems involving RSA, AES, ECC, lattices, LWE, CVP, number theory, Coppersmith, Pollard, Wiener, padding oracle, GCM, key derivation, or stream/block cipher weaknesses.
 license: MIT
-compatibility: Requires filesystem-based agent (Claude Code or similar) with bash, Python 3, and internet access for tool installation.
 allowed-tools: Bash Read Write Edit Glob Grep Task WebFetch WebSearch
 metadata:
   user-invocable: "false"
 ---
 
 # CTF Cryptography
+
+> Workspace integration: read [the local execution and evidence rules](../../../docs/SKILL-INTEGRATION.md) before using these examples.
+
+Tool requirements: Requires filesystem-based agent (Claude Code, Codex or similar) with bash, Python 3, and internet access for tool installation.
 
 Quick reference for crypto CTF challenges. Each technique has a one-liner here; see supporting files for full details with code.
 

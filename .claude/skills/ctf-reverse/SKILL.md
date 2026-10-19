@@ -2,13 +2,16 @@
 name: ctf-reverse
 description: Provides reverse engineering techniques for CTF challenges. Use when the main job is to understand how a compiled, obfuscated, packed, or virtualized target works before exploiting or solving it, including binaries, APKs, WASM, firmware, custom VMs, bytecode, game clients, malware-like loaders, and anti-debug or anti-analysis logic. Do not use it when the vulnerability is already understood and the remaining task is exploitation; use pwn instead. Do not use it for pure web workflows, log or disk forensics, or standalone crypto problems unless reversing the implementation is the real blocker.
 license: MIT
-compatibility: Requires filesystem-based agent (Claude Code or similar) with bash, Python 3, and internet access for tool installation.
 allowed-tools: Bash Read Write Edit Glob Grep Task WebFetch WebSearch
 metadata:
   user-invocable: "false"
 ---
 
 # CTF Reverse Engineering
+
+> Workspace integration: read [the local execution and evidence rules](../../../docs/SKILL-INTEGRATION.md) before using these examples.
+
+Tool requirements: Requires filesystem-based agent (Claude Code, Codex or similar) with bash, Python 3, and internet access for tool installation.
 
 Quick reference for RE challenges. For detailed techniques, see supporting files.
 
@@ -40,6 +43,8 @@ r2pm -ci r2ghidra   # Native Ghidra decompiler for radare2
 - pwndbg — Linux: [GitHub](https://github.com/pwndbg/pwndbg), macOS: `brew install pwndbg/tap/pwndbg-gdb`
 
 ## Additional Resources
+
+- [rea.md](rea.md) - 선택형 REA/Ghidra 분석, WSL 연결, Evidence와 cleanup.
 
 - [unicorn-emulation.md](unicorn-emulation.md) - Unicorn CPU emulation: raw binary assembly emulation, hooks, ARM/MIPS/Thumb, mixed-mode, firmware MMIO, Keystone+Capstone trace inversion, shellcode unpack, custom VM, vs Qiling decision (sometimes easier to rev with just unicorn + binary + assembly than full GDB/angr)
 - [tools.md](tools.md) - Static analysis tools (GDB, Ghidra, radare2, IDA, Binary Ninja, dogbolt.org, RISC-V with Capstone, Unicorn emulation, Python bytecode, WASM, Android APK, .NET, packed binaries)

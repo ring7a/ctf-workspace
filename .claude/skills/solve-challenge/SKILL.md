@@ -2,7 +2,6 @@
 name: solve-challenge
 description: Solves CTF challenges by performing first-pass triage, identifying the dominant category, and routing execution to the right specialized ctf-* skill. Use when the user gives you a challenge bundle, a remote service, a suspicious file, or only a vague challenge description and you must determine where to start. Do not use it when the category is already clear and a specialized skill can be invoked directly; this is the dispatcher and recon entrypoint, not the deepest reference for category-specific techniques.
 license: MIT
-compatibility: Requires filesystem-based agent (Claude Code or similar) with bash, Python 3, and internet access. Orchestrates other ctf-* skills.
 allowed-tools: Bash Read Write Edit Glob Grep Task WebFetch WebSearch Skill
 metadata:
   user-invocable: "true"
@@ -10,6 +9,10 @@ metadata:
 ---
 
 # CTF Challenge Solver
+
+> Workspace integration: read [the local execution and evidence rules](../../../docs/SKILL-INTEGRATION.md) before using these examples.
+
+Tool requirements: Requires filesystem-based agent (Claude Code, Codex or similar) with bash, Python 3, and internet access. Orchestrates other ctf-* skills.
 
 You're a skilled CTF player. Your goal is to solve the challenge and find the flag.
 
@@ -22,21 +25,21 @@ Two setup strategies depending on your workflow:
 Use the central installer entrypoint:
 
 ```bash
-bash scripts/install_ctf_tools.sh all
+bash tools/vendor-ctf-skills/scripts/install_ctf_tools.sh all
 ```
 
 Run a narrower mode when you only want one tool group:
 
 ```bash
-bash scripts/install_ctf_tools.sh python
-bash scripts/install_ctf_tools.sh apt
-bash scripts/install_ctf_tools.sh brew
-bash scripts/install_ctf_tools.sh gems
-bash scripts/install_ctf_tools.sh go
-bash scripts/install_ctf_tools.sh manual
+bash tools/vendor-ctf-skills/scripts/install_ctf_tools.sh python
+bash tools/vendor-ctf-skills/scripts/install_ctf_tools.sh apt
+bash tools/vendor-ctf-skills/scripts/install_ctf_tools.sh brew
+bash tools/vendor-ctf-skills/scripts/install_ctf_tools.sh gems
+bash tools/vendor-ctf-skills/scripts/install_ctf_tools.sh go
+bash tools/vendor-ctf-skills/scripts/install_ctf_tools.sh manual
 ```
 
-The full package lists now live in [scripts/install_ctf_tools.sh](../scripts/install_ctf_tools.sh).
+The full package lists now live in [the vendored installer](../../../tools/vendor-ctf-skills/scripts/install_ctf_tools.sh).
 
 ### On-demand (during challenges)
 
@@ -44,7 +47,9 @@ Each category skill's `SKILL.md` has a **Prerequisites** section listing only th
 
 ## Workflow
 
-### Step 0: CTFd Platform Detection
+### Step 0: Intake and CTFd Platform Detection
+
+Complete the event intake in `docs/PRE-CTF-INTAKE.md` and record scope before connecting. Official platform navigation is read-only; flags are submitted by a human.
 
 If the CTF platform URL is known, check if it runs CTFd and switch to API-driven navigation:
 
@@ -54,7 +59,7 @@ curl -s "$CTF_URL/api/v1/" | head -5
 curl -s "$CTF_URL" | grep -oE '/themes/core/'
 ```
 
-If CTFd is detected, **ask the user for their API token** (generated from CTFd Settings > Access Tokens). The token is not provided by default — the user must create one in the CTFd web UI first. Once provided, set the environment variables and proceed via API:
+If CTFd is detected and authenticated read access is required, **ask the user for their API token** (generated from CTFd Settings > Access Tokens). The token is not provided by default — the user must create one in the CTFd web UI first. Once provided, set the environment variables and proceed via API:
 
 ```bash
 export CTF_URL="https://ctf.example.com"
