@@ -71,6 +71,7 @@ go install github.com/ffuf/ffuf/v2@latest
 - [cves.md](cves.md) - CVE-driven techniques you can match against challenge banners, headers, dependency leaks, or version strings
 - [field-notes.md](field-notes.md) - Long-form exploit notes: quick references for SQLi, XSS, LFI, JWT, SSTI, SSRF, command injection, XXE, deserialization, race conditions, auth bypass, and multi-stage chains
 - [agent-browser.md](agent-browser.md) - 라이브 웹 상호작용(반복 자동화 트랙): agent-browser(Vercel Labs CDP CLI, 접근성 트리 @eN ref) 운용 — 역할 분담(실제 로그인 조작=claude-in-chrome MCP / 자동화·HAR→API 클라이언트·녹화=agent-browser / 수동=curl·requests), 커맨드 매핑, 세션 격리, 현재 호스트 상태
+- [authenticated-wargame.md](authenticated-wargame.md) - 사용자가 로그인해 둔 웹 워게임/실습 사이트(webhacking.kr 등)를 claude-in-chrome(실제 Chrome)으로 공략하는 절차: 탭은 양성 페이지·요청은 fetch(세션 자동 포함), alert freeze/MCP 출력필터/view_source 우회, 쿠키 조작, SQLi 필터 바이패스 조각, 서브에이전트 역할 분담 (webhacking.kr 검증)
 - [python-requests.md](python-requests.md) - Python requests toolkit: session scaffold, Burp-Intruder-like fuzzer (sync + ThreadPoolExecutor + httpx async), payload deploy from pat-reference.md wordlists, header/param spray, cookie/JWT, proxy
 - [pat-reference.md](pat-reference.md) — PayloadsAllTheThings index: bulk payloads for XSS/SQLi/SSRF/SSTI/LFI/Command Injection/Upload (requires PAT clone, see Prerequisites)
 
