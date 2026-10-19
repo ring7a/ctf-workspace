@@ -101,6 +101,14 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   아니면 NOTES에 "인프라 게이트"로 적고 넘어간다 (old-31, old-37).
 - **이메일 헤더 인젝션**: subject/수신자 등 사용자 입력이 메일에 그대로 들어가면 `\r\n`으로 헤더 추가(`Bcc:`) 또는
   빈 줄(`\r\n\r\n`) 후 본문 주입 → `subject=hello%0d%0aBcc:me@x%0d%0a%0d%0abody` (old-47).
+- **INSERT 자기컬럼 참조(`select` 불필요)**: 필터가 `select`를 막아도 비밀이 **내가 삽입하는 행**에 보간되면
+  (`values(...,'$flag',{se})`의 `pw`='$flag') 뒤쪽 VALUES 식에서 그 컬럼을 직접 참조한다 — MySQL이 방금 대입한 값을
+  해석 → `se=if(ascii(substr(pw,N,1))>X,sleep(1),0)` 시간기반 오라클, 서브쿼리/`select` 없이 추출 (old-57).
+- **LIKE 와일드카드 블라인드**: addslashes로 따옴표는 죽어도 `%`/`_`가 살아있는 검색은 **숨은 컬럼의 substring 오라클**.
+  알려진 접두사를 구체 문자로 확장(검색 결과에 admin 글이 뜨는지로 참/거짓), `_`/`%`는 리터럴 테스트 불가 → `_`로 추론,
+  길이는 `PREFIX{<밑줄 k개>}`로 측정 (old-56).
+- **`ascii`/`like` 차단 시 바이트 비교**: `ascii`/`substr`/`like`가 막혀도 `mid`/`substring`/`binary`/`>`가 살면
+  `binary(mid(col,N,1))>0xHH`로 바이트 이진탐색 (old-40).
 
 ## 4. 병렬 서브에이전트
 - **순수 계산** 위임: 필터 역산(문자열 변환식의 역상 탐색 — old-24 IP 필터는 길이 20 페이로드를 서브에이전트가 전수탐색),
@@ -138,6 +146,11 @@ curl -s -b "PHPSESSID=$SID" -A "zz9','1','admin')#" https://webhacking.kr/challe
 curl -s -b "PHPSESSID=$SID" -A "zz9"                 https://webhacking.kr/challenge/web-08/ | grep -i congratz
 ```
 세션은 만료·로그아웃·재로그인 시 바뀌니, 실패가 늘면 세션파일을 갱신한다.
+
+환경 노트(이 호스트): 셸은 **Git Bash**라 경로가 `/e/...`(Windows) 이고 WSL `/mnt/e/...`가 아니다. `bc`가 없으니
+시간기반 블라인드 SQLi 오라클은 `curl -w '%{time_total}'` + `awk`(또는 python)로 측정한다. Windows python은 stdout이
+cp949라 한글/비ASCII 출력 시 `sys.stdout.reconfigure(encoding='utf-8',errors='replace')` 필요. `/tmp`는 디렉터리이니
+임시파일은 스크래치패드나 `events/<site>/`(gitignore됨)에 쓴다. UTF-8 복호는 `PYTHONIOENCODING=utf-8`만으로 부족할 수 있다.
 
 ## 6. 범위·증거
 - 대회/워게임이 지정한 챌린지 타깃만. 인증·랭킹 인프라, 다른 사용자, 무관 호스트 금지.
