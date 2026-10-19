@@ -194,6 +194,27 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   (22자, ≤24)가 **대소문자 구분 전체 비교**이므로 ci로 뽑은 글자열에 case만 브루트. `binary(N)`은 25자라 **잘린 cs 오라클은 예산
   초과** → 전체 cs 비교로 케이스만 확정. 쿼리에 `[` `]`가 들어가면 **curl은 반드시 `-g`**(globbing)로 보낼 것(안 그러면 파라미터 증발).
 
+- **이스케이프 정확매칭 SQLi 판별 오라클**: `<term>`을 "not found"로 에코하는 정확매칭 조회(SWAPI류)에서 주입성 판별은
+  키워드 없이 `<term>'--`/`<term>'#`로 한다 — 따옴표가 깨지면 주석이 쿼리를 잘라 **같은 행이 그대로** 반환(found/200),
+  이스케이프되면 0행(not found/404). 잡힌 SQL 에러가 "not found"로 위장할 수 있으니 무거운쿼리 타이밍(sqlite `randomblob(1e8)`,
+  mysql `sleep()`)으로 블라인드 가능성까지 배제한다(타이밍 평탄=둘 다 아님). 대소문자 거동(소문자 매치/대문자 실패/표시는 대문자)은
+  `lower(name)=term` 지문.
+- **strip_tags는 라이브 마크업에 우회 불가**: 인용된 속성을 존중하고 모든 `<...>`를 전역 제거하며 닫히지 않은 말단 `<`는
+  문자열 끝까지 제거한다. strip_tags 뒤의 반사는 CSP와 무관하게 HTML/속성 주입이 죽는다. 싸게 지문: `<x`(미닫힘→꼬리 전체
+  소멸=strip_tags / 그대로 생존=`<[^>]*>` 정규식), `&lt;`가 그대로 생존=htmlspecialchars 아님, 홑 `>` 생존=태그전용 스트리퍼.
+- **`script-src none;`(따옴표 없는 none)은 완화가 아니다**: 파서가 invalid `none`을 잘못 다뤄도 인라인 스크립트/핸들러는 여전히
+  차단(문자 그대로 "none" 호스트만 허용). bogus 값을 "CSP 꺼짐"으로 오판하지 말 것.
+- **port-app admin-bot 정찰 + 인프라게이트 판정**: "report to admin" 엔드포인트의 고정 동기지연(~5s)=리포트마다 헤드리스
+  브라우저가 (base 접두된) 경로를 직접 방문. 유일 반사가 하드닝(strip_tags+CSP)이고 JS 싱크에 공격자 데이터가 없고 in-scope
+  쓰기+읽기 싱크/CORS/admin 페이지가 없으면, 쿠키-반출 XSS는 `fsockopen`/로그-IP(old-31/37/38)와 동종 **인프라/스코프 게이트** —
+  터널 파지 말고 그렇게 판정.
+
+- **Google Form 플래그/정답 추출**: 폼 HTML의 `FB_PUBLIC_LOAD_DATA_`(또는 `..._initialData`) 스크립트 변수에 폼 전체 정의가
+  들어있다 — 퀴즈 정답·피드백·숨은 값 포함. `curl <forms.gle 링크> | grep -oE 'FLAG\{[^}]*\}'`로 바로 나오기도 한다 (g00gle1).
+- **Google Sheet 무권한 읽기(request-access 없이)**: `/export?format=csv`는 로그인 게이트지만 **`/gviz/tq?tqx=out:csv`**
+  (Visualization API)는 접근요청 없이 셀값을 반환한다. 미끼만 보이면 진짜 값은 **셀 노트/숨은 시트(특정 gid)** 에 있을 수
+  있고 그건 Sheets API 키나 로그인-인접 방법이 필요 (g00gle2: gviz는 decoy만).
+
 ## 4. 병렬 서브에이전트
 - **순수 계산** 위임: 필터 역산(문자열 변환식의 역상 탐색 — old-24 IP 필터는 길이 20 페이로드를 서브에이전트가 전수탐색),
   크립토, 해시/인코딩 브루트포스, 디코딩.
