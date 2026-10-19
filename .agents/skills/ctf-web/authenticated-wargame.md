@@ -87,6 +87,18 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
 - **클라이언트 전용 다운로드 차단 우회**: 막힌 다운로드가 `javascript:alert('Access Denied')` 같은 **클라 측**이면
   서버의 다운로드 파라미터를 직접 호출한다 — 보통 `?down=base64(파일명)`류. `?down=ZmxhZy5kb2N4`(="flag.docx").
   받은 `.docx`/`.xlsx`/`.pptx`는 zip이므로 `word/document.xml` 등에서 텍스트/플래그 추출 (old-42).
+- **raw-binary MD5 SQLi (`ffifdyop`)**: `md5($pw, true)`(raw 바이트)를 따옴표 없이 `pw='{raw}'`에 넣는 코드엔
+  `pw=ffifdyop`를 보낸다 — `md5('ffifdyop',true)`가 `'or'6␚...` 바이트를 포함해 `pw=''or'6...'`가 항상 참 (old-51).
+- **overlong 파일명 → `copy()` 에러로 숨은 경로 노출**: 업로드가 미지의 디렉터리에 쓰는데 경로를 모르면, **255자 초과
+  파일명**으로 `Warning: copy(./<secret_dir>/aaaa…): failed to open stream: File name too long`를 유발 → 에러가
+  전체 목적지(비밀 업로드 디렉터리)를 출력한다. 그 경로로 업로드물 접근 (old-41).
+- **숫자채널 블라인드 SQLi(출력되는 INSERT 컬럼)**: 삽입값이 나중에 화면에 echo되고 문자열 연결이 막히면
+  `0'+(subquery)+'0`로 깨서 서브쿼리를 **숫자**(`ascii`/`length`/`count`)로 표시 → 한 글자씩 추출. WAF가 `,(`(멀티행·
+  `concat()`)·`substr(`·`user()`·`limit a,b`에서 연결을 끊으면 **`mid(x FROM n FOR 1)`·`limit n offset m`**(콤마 없이),
+  `/**/` 제거 시 실제 공백/괄호로 토큰 분리. information_schema로 테이블/컬럼 열거 (old-29).
+- **인프라 게이트 SSRF/콜백(풀이 불가 판정)**: `fsockopen($host,port)` 성공이 솔브 조건이면 **공인 TCP 리스너**가
+  필요하다. NAT 뒤·포트포워드 없음이면 불가(localhost.run류는 80/443만). 공용 리스너를 확보할 수 있을 때만 시도,
+  아니면 NOTES에 "인프라 게이트"로 적고 넘어간다 (old-31, old-37).
 
 ## 4. 병렬 서브에이전트
 - **순수 계산** 위임: 필터 역산(문자열 변환식의 역상 탐색 — old-24 IP 필터는 길이 20 페이로드를 서브에이전트가 전수탐색),
