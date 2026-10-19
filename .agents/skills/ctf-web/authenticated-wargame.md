@@ -215,6 +215,17 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   (Visualization API)는 접근요청 없이 셀값을 반환한다. 미끼만 보이면 진짜 값은 **셀 노트/숨은 시트(특정 gid)** 에 있을 수
   있고 그건 Sheets API 키나 로그인-인접 방법이 필요 (g00gle2: gviz는 decoy만).
 
+- **parse_url 화이트리스트는 스킴 불문 → `data://` 플레인 + 퍼센트인코딩으로 문자 블랙리스트 전면 우회(include RCE)**:
+  `include($_GET['url'].".txt")`에 `filter_var URL`+`host===X&&port===N`+리터럴 서브스트링+문자블랙리스트(`( ) $ ' " _ ? @ # …`)가
+  걸려도: (1) `parse_url`의 host/port 추출은 스킴을 가리지 않으므로 `data://X:N/…`가 host=X·port=N을 통과한다(필수 리터럴
+  서브스트링은 mediatype 구간에 끼워 넣는다). (2) PHP 소스를 **퍼센트인코딩**해 data 파트에 넣으면 모든 금지문자가 `%XX`(금지아님)로
+  바뀐다 — `data://X:N/<substr>/,%3C%3Fphp%20system(...)%3B%3F%3E`. 전송 시 **이중 인코딩**해 `$_GET['url']`이 단일 `%XX`를
+  유지하게 하고, data:// 플레인 래퍼가 rawurldecode해 실제 `<?php…?>`로 실행한다(base64 아님 — base64는 뒤에 붙는 `.txt`가
+  디코드를 깨뜨릴 수 있다). 꼬리 `.txt`는 `?>` 뒤라 HTML로 무해. 주의: python `quote(safe='')`는 `_`를 그대로 두므로 `_`만
+  수동 `%5F`. `allow_url_include=On`이면 data/원격 include가 PHP를 실행(테스트: `<?php echo 7*7;?>`→`49`). (old 🍊:10009 FLAG 콘텐츠).
+  반례(이 챌린지에서 막힌 것): http 래퍼는 parse_url과 같은 `php_url_parse`를 써서 fetch host:port가 화이트리스트값으로 **고정**
+  →curl식 오프호스트 RFI 불가; `file://`는 비로컬 authority(=화이트리스트 host) 거부; `php://filter`는 host가 항상 `filter`.
+
 ## 4. 병렬 서브에이전트
 - **순수 계산** 위임: 필터 역산(문자열 변환식의 역상 탐색 — old-24 IP 필터는 길이 20 페이로드를 서브에이전트가 전수탐색),
   크립토, 해시/인코딩 브루트포스, 디코딩.
