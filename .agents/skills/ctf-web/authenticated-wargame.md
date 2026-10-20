@@ -155,6 +155,11 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   업로드 디렉터리에 `.htaccess`(`php_value mysqli.default_host "<내 공인 MySQL>"` 등)를 올려 DB를 **공격자 MySQL**로 돌리고,
   거기에 기대 스키마(예: `chall30.chall30_answer`에 비어있지 않은 행)를 심으면, 고정쿼리가 참이 되어 `include "/flag"`류가 실행된다
   (old-30). **인프라 게이트**: 챌린지 서버가 공격자 MySQL:3306에 아웃바운드로 닿아야 함(NAT 뒤면 serveo/ngrok TCP 터널 필요).
+- **`.htaccess` `auto_prepend_file`로 임의파일 include(DB 리다이렉트보다 우선 시도)**: 업로드 디렉터리에서 `.htaccess`
+  `php_value`가 먹고 그 안의 `.php`가 실행되면, DB를 돌릴 것 없이 `php_value auto_prepend_file "/flag"`만 올려도 PHP가
+  매 요청 전에 `/flag`를 prepend해 그대로 출력한다. `<` 불필요(본문필터 통과), 실행 업로드 본문 불필요, 외부 서비스 불필요.
+  old-30의 실제 최단 해법(위 DB 리다이렉트는 `php_admin_value`로 잠겼을 때의 대안). `.htaccess`로 `php_value`가 통하면
+  이걸 먼저 시도한다. (파일명 `.htaccess`로 멀티파트 업로드; `auto_append_file`도 동일 효과.)
 - **`from_unixtime()` 숫자 exfil 오라클**: 입력이 `from_unixtime(N)`을 거쳐 **시각**으로 표시되면 N이 `HH:MM:SS`에 그대로
   읽힌다 → `ascii(substr(...))`를 시간기반 블라인드 대신 **한 방 문자읽기**로 (old-02, 09:00:00 KST 오프셋).
 - **에코되는 해시로 해시스킴 역산**: 로그인이 저장 해시를 보여주면, **빈/알려진 비번으로 가입**해 `pw=md5(pw.<salt>)` 같은
