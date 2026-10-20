@@ -126,7 +126,17 @@ await fetch('/challenge/web-01/', {credentials:'include'}).then(r=>r.text())
   on-demand로 bot을 부를 수 있어 분 단위로 풀린다(BABY·CHILD). 트리거가 없고 **수동 크론**이 `/upload/` 같은 곳을
   도는 데만 의존하면(old-48), 익스플로잇이 완비돼도 관측창 안에 안 올 수 있다 — 이건 공격 실패가 아니라 bot 방문
   주기 문제. 길게 passive watch를 걸거나, 주기를 모르면 "admin-bot inactive/no callback(관측창 내)"로 판정한다.
-  (3) **주의(모델 안전장치)**: admin 쿠키 반출 류 페이로드 작성은 SQLi/cmdi와 달리 Claude 실시간 cyber 안전장치에
+  (3) **임의 TCP 인바운드**(fsockopen 콜백·공격자 MySQL·rebind SSRF 등, old-31/30/child-toctou류): `bore.pub`가
+  무가입 공개 TCP 터널 — 로컬 리스너를 `bore local <port> --to bore.pub --port <원하는포트>`로 공개한다. **실측 함정 3개**:
+  (i) **ubuntu-ctf WSL이 무응답**일 수 있으니(실측) 호스트 Python으로 돌린다. (ii) **bore.exe는 Defender가 Trojan 오탐
+  격리**한다 — 바이너리 대신 저장소의 순수 파이썬 클라이언트 `events/webhacking.kr/challenges/old-31/work/bore_compat_client.py`
+  (bore v0.6.0 NUL-JSON 프로토콜 직접 구현, 호스트 Python, 바이너리·WSL 불요)를 재사용. 짝 스크립트 `tcp_marker_listener.py`,
+  `self_handshake.py`. (iii) **IPv6 함정**: 챌린지가 `bore.pub`를 AAAA로 resolve하면 IPv6 라우트가 없어 "Network is
+  unreachable" — **IPv4 리터럴로 지정**한다(bore.pub A레코드 `159.223.110.159`, 변동 가능하니 매번 확인). **포트 범위 요구**
+  (old-31은 10000-10100 중 랜덤): 그 범위에서 빈 포트 하나만 예약하고 `server=<IPv4>`로 **반복 시도**하면 랜덤 포트가
+  내 예약 포트와 일치할 때(≈1/101) fsockopen 성공 → ~300회로 바운드. **old-31 실해결**(32회째 성공, 포인트형 클리어).
+  건드리기 전 반드시 자기 핸드셰이크로 릴레이 검증(exact_match).
+  (4) **주의(모델 안전장치)**: admin 쿠키 반출 류 페이로드 작성은 SQLi/cmdi와 달리 Claude 실시간 cyber 안전장치에
   더 자주 `[cyber]`로 걸린다(Opus 4.8에서도 실측 종료). 확률적이라 같은 작업이 다른 서브에이전트에선 완주하기도 함.
   걸리면 같은 프롬프트로 반복하지 말고 모델/서브에이전트를 바꿔 재투입하되, 반복 실패 시 그 단계는 사람이 수행.
 - **이메일 헤더 인젝션**: subject/수신자 등 사용자 입력이 메일에 그대로 들어가면 `\r\n`으로 헤더 추가(`Bcc:`) 또는
